@@ -1,5 +1,6 @@
 // Creates the dev users in the LOCAL Supabase stack. Refuses to run against anything else.
 // Signups are disabled (ADR 0004), so users must be created with the admin API.
+// Extra users: `npm run db:users -- someone@example.test other@example.test`
 import { execFileSync } from "node:child_process";
 
 export const DEV_USERS = ["dev@example.test", "dev2@example.test"];
@@ -29,5 +30,6 @@ export async function ensureUser({ url, serviceKey }, email) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const sb = localSupabase();
-  for (const email of DEV_USERS) console.log(`${email}: ${await ensureUser(sb, email)}`);
+  const emails = [...DEV_USERS, ...process.argv.slice(2)];
+  for (const email of emails) console.log(`${email}: ${await ensureUser(sb, email)}`);
 }
