@@ -16,5 +16,26 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
   *proposed* ADR so I make that security call myself.
 - **Blocked:** The AI session couldn't create the GitHub repo; I created it by hand.
 
+## 2026-11-19: ADR review (Claude Code)
+- **Why:** The Week 1 plan and stack came out of an earlier AI chat that made the decisions for
+  me. Before writing code, I went through every ADR and chose deliberately.
+- **Changed:**
+  - Audio storage: Supabase Storage + TUS → **Cloudflare R2 + presigned URLs**. Audio streaming
+    is egress-heavy and R2 has zero egress fees; also removes the 50 MB Free-plan file cap.
+    Upload limit set to 500 MB, single PUT for now (multipart only if real uploads fail).
+  - Ownership: per-user → **workspaces** with members. The one data-model choice that's painful to retrofit.
+  - Signups: open → **invite-only**. Open magic-link signup would let strangers fill my R2 bucket.
+  - Client access: token-checking DB functions → **share link redeemed into an anonymous session +
+    grant, then plain RLS**, so client features (and future client accounts) don't need a
+    parallel permission system.
+  - Agent rules moved to tool-neutral `AGENTS.md`; `CLAUDE.md` imports it.
+- **Kept:** Next.js (hiring signal, AI-tool support), Supabase for auth + Postgres, Vercel
+  (Hobby until Week 4, then Pro; Netlify's metered free deploys and adapter weren't worth ~$20/mo),
+  npm workspaces, migrations as the only way to change schema, dev/prod split before Week 4.
+- **AI got wrong / missed at first:** assumed open signups were fine; the original plan's
+  Supabase Storage choice ignored egress costs for an audio-streaming product.
+- **Lesson from the old repo:** `mixdown-cloudflare` (Epic Stack) hand-rolled auth, ORM and upload
+  plumbing across ~60 dependencies before any product feature. This time: managed services, own only the product.
+
 ## Weekly check-ins
 <!-- Sunday: What shipped (link)? What did I cut? What slowed me down? Next week's one goal? -->

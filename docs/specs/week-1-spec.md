@@ -1,8 +1,13 @@
-# Mix Review Portal — Week 1 Spec: Foundation
+# Mix Review Portal: Week 1 Spec (Foundation)
 
 Owner: Ryan Gildea
 Time budget: 8–10 hours, split into five sessions
 Week goal: a live website where I can log in, upload a mix, and play it back.
+
+> **Revised 2026-11-19 after the ADR review** (`docs/adr/`). Changes from the original draft:
+> audio lives in **Cloudflare R2** via presigned URLs instead of Supabase Storage + TUS (ADR 0002/0003);
+> data is owned by **workspaces** (ADR 0004); **signups are invite-only**; max upload is **500 MB**;
+> Next.js 16 uses **`proxy.ts`** instead of middleware. Task-level detail lives in the Week 1 GitHub issues.
 
 ---
 
@@ -14,12 +19,12 @@ Week 1 is plumbing only: accounts, storage, a database, and deployment. Nobody s
 
 Week 1 is done when all of these are true on the **live URL**, not just on my laptop:
 
-- [ ] I can sign in with a magic link sent to my email, and sign out.
+- [ ] I can sign in with a magic link sent to my email, and sign out. Uninvited emails can't sign in.
 - [ ] Signed-out visitors can't see any song pages. They get sent to the login page.
 - [ ] I can create a song with a title and an optional client/artist name.
-- [ ] I can upload a WAV or MP3 for that song and watch a progress bar while it uploads.
+- [ ] I can upload a WAV or MP3 (up to 500 MB) for that song and watch a progress bar while it uploads.
 - [ ] After uploading, the song page plays the mix in the browser.
-- [ ] The song list shows my songs, newest first.
+- [ ] The song list shows my workspace's songs, newest first.
 - [ ] Every push to `main` deploys automatically.
 - [ ] The README says what the project is and how to run it locally.
 
@@ -27,7 +32,8 @@ Week 1 is done when all of these are true on the **live URL**, not just on my la
 
 ### In scope
 
-- Login and logout with magic links, for me (the engineer) only
+- Login and logout with magic links, invite-only (me plus a test account)
+- An automatic personal workspace per user
 - Creating and listing songs
 - Uploading one mix file per song (version 1)
 - Playing the mix with the browser's built-in audio player
@@ -41,158 +47,139 @@ Week 1 is done when all of these are true on the **live URL**, not just on my la
 | Client share links, timestamped comments | Week 2 |
 | Uploading v2, v3… and comparing versions | Week 3 |
 | Email notifications | Week 3 |
+| Paid plans (Vercel Pro, Supabase Pro) and a separate prod environment | Before Week 4 |
 | AI revision notes | Week 5 |
 | Tests and a CI pipeline beyond the deploy build | Week 6 |
-| Payments, invoicing, branding, custom domain, dark mode, mobile app, team accounts, AIFF/FLAC support, editing or deleting songs | Later list |
+| Inviting workspace members, roles UI, workspace switcher | Later list |
+| Resumable/multipart uploads, compressed streaming copies | Later list |
+| Payments, invoicing, branding, custom domain, dark mode, mobile app, AIFF/FLAC support, editing or deleting songs | Later list |
 
-## 4. Tech stack (decided, no further debate)
+## 4. Tech stack (decided; see ADR 0002)
 
 | Layer | Choice | Why |
 |---|---|---|
-| App framework | Next.js (App Router) + TypeScript | One codebase for frontend and backend; widely used; fast to deploy |
-| Styling | Tailwind CSS | Quick, consistent styling without design work |
-| Login, database, storage | Supabase (Auth, Postgres, Storage) | All three in one managed service; free to start |
-| Large file uploads | `tus-js-client`, uploading straight from the browser to Supabase Storage | Supabase recommends resumable (TUS) uploads for files over 6 MB, and this method reports upload progress ([Supabase](https://supabase.com/docs/guides/storage/uploads/resumable-uploads)) |
-| Hosting | Vercel, connected to GitHub | Every push deploys automatically |
-| AI coding tool | Claude Code or Cursor | I write the specs and review every change; the AI writes most of the routine code |
+| App framework | Next.js 16 (App Router) + TypeScript | One codebase for frontend and backend; most in demand; best AI-tool support |
+| Styling | Tailwind CSS v4 | Quick, consistent styling without design work |
+| Login + database | Supabase (Auth, Postgres with RLS) | Managed auth with `auth.uid()` in database policies |
+| Audio storage | Cloudflare R2, presigned URLs | Zero egress fees for streaming large files; S3 API |
+| Hosting | Vercel (Hobby now, Pro before Week 4) | Every push deploys; preview per PR |
+| AI coding tool | Claude Code or Cursor (rules in `AGENTS.md`) | I write the specs and review every change |
 
-### File size decision (important)
+### File size and cost notes
 
-- The Supabase Free plan caps each uploaded file at **50 MB**. The Pro plan ($25/month) allows files up to 500 GB ([Supabase pricing](https://supabase.com/pricing)). A 5-minute 24-bit/48 kHz stereo WAV is about 85 MB.
-- **Week 1:** stay on the Free plan. Limit uploads to 50 MB and test with MP3s or short WAVs.
-- **Before Week 4 (first real client):** upgrade to Pro, then raise the global and bucket file size limits. Both are set in Storage settings ([Supabase](https://supabase.com/docs/guides/storage/uploads/file-limits)).
-- Free projects also pause after a week of inactivity, and include 1 GB of storage and 5 GB of downloads (egress) ([Supabase pricing](https://supabase.com/pricing)). That's fine for Week 1, but it's another reason to upgrade before real use.
-- **Never send the audio file through my own server.** Vercel caps request bodies at about 4.5 MB ([Files SDK guide](https://files-sdk.dev/guides/supabase-private-uploads-rls)), so files go straight from the browser to Supabase Storage.
+- Max upload **500 MB** (constant `MAX_UPLOAD_BYTES`). R2 single PUT allows up to 5 GB. A 6-minute 24-bit/96 kHz stereo WAV is about 200 MB.
+- **Never send the audio file through my own server.** Vercel caps request bodies at about 4.5 MB, so files go straight from the browser to R2 with a presigned URL.
+- Supabase Free projects pause after a week of inactivity; Vercel Hobby is non-commercial. Both get upgraded before Week 4.
 
-## 5. Data model
-
-Each user owns their own data, enforced in the database with Supabase's Row Level Security (RLS). Week 1 has only one user (me), but this keeps it safe later.
+## 5. Data model (ADR 0004)
 
 ```sql
--- songs: one row per song I'm mixing
+create table workspaces (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  created_at  timestamptz not null default now()
+);
+
+create table workspace_members (
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  role         text not null default 'owner' check (role in ('owner', 'member')),
+  created_at   timestamptz not null default now(),
+  primary key (workspace_id, user_id)
+);
+
 create table songs (
   id           uuid primary key default gen_random_uuid(),
-  owner_id     uuid not null references auth.users(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  created_by   uuid not null default auth.uid() references auth.users(id),
   title        text not null check (char_length(title) between 1 and 200),
   client_name  text,
   created_at   timestamptz not null default now()
 );
 
--- mix_versions: Week 1 only creates version 1, but the table is ready for Week 3
+-- Week 1 only creates version 1, but the table is ready for Week 3
 create table mix_versions (
   id                uuid primary key default gen_random_uuid(),
   song_id           uuid not null references songs(id) on delete cascade,
   version_number    int  not null default 1,
-  storage_path      text not null,   -- e.g. {owner_id}/{song_id}/v1-{filename}
+  object_key        text not null,   -- {workspace_id}/{song_id}/v1-{uuid}.{ext}
   original_filename text not null,
   mime_type         text not null,
   size_bytes        bigint not null,
+  created_by        uuid not null default auth.uid() references auth.users(id),
   created_at        timestamptz not null default now(),
   unique (song_id, version_number)
 );
-
-alter table songs enable row level security;
-alter table mix_versions enable row level security;
-
-create policy "owner can do everything with own songs"
-  on songs for all
-  using (owner_id = auth.uid())
-  with check (owner_id = auth.uid());
-
-create policy "owner can do everything with own versions"
-  on mix_versions for all
-  using (exists (select 1 from songs s where s.id = song_id and s.owner_id = auth.uid()))
-  with check (exists (select 1 from songs s where s.id = song_id and s.owner_id = auth.uid()));
 ```
 
-**Storage bucket:** `mixes`, **private**, allowed types `audio/wav`, `audio/x-wav`, `audio/mpeg`, file size limit 50 MB for now. Storage policies let a signed-in user read and write only paths that start with their own user ID.
+- RLS on all four tables. Policies use one helper, `private.is_member(workspace_id)`
+  (`security definer`, `stable`, `search_path` set, in a non-exposed `private` schema).
+- A trigger on `auth.users` insert creates a personal workspace with that user as `owner`.
+- Indexes: `songs(workspace_id, created_at desc)`, `mix_versions(song_id)`, `workspace_members(user_id)`.
 
-**Playback:** the song page asks Supabase for a short-lived signed URL (1 hour) for the file and gives it to the `<audio>` element. The bucket is never public.
+**R2 bucket:** `mixdown-dev`, private, CORS from `infra/r2-cors.json`. No public access.
+
+**Playback:** the song page checks access via RLS, then creates a presigned GET URL (1 hour) for the `<audio>` element.
 
 ## 6. Pages
 
 | Route | Who | What it does |
 |---|---|---|
-| `/login` | Anyone | Email field and "Send magic link" button |
+| `/login` | Anyone | Email field and "Send magic link" button (`shouldCreateUser: false`) |
 | `/auth/callback` | Anyone | Finishes the magic-link login, then redirects to `/songs` |
-| `/songs` | Signed in | Song list (title, client, date), newest first, plus a "New song" button |
+| `/songs` | Signed in | Workspace's song list (title, client, date), newest first, plus a "New song" button |
 | `/songs/new` | Signed in | Title, optional client name, file picker, upload progress bar |
-| `/songs/[id]` | Signed in (owner) | Title, client, file name and size, audio player |
+| `/songs/[id]` | Workspace member | Title, client, file name and size, audio player |
 
-Middleware sends signed-out visitors from any `/songs` route to `/login`.
+`src/proxy.ts` refreshes the session and sends signed-out visitors from any `/songs` route to `/login`.
 
-## 7. Upload flow
+## 7. Upload flow (ADR 0003)
 
-1. I fill in the title and pick a file. The browser checks the file type (WAV or MP3) and size (50 MB or less) and shows a clear error if it fails.
-2. The app creates the `songs` row.
-3. The browser uploads the file to `mixes/{owner_id}/{song_id}/v1-{safe-filename}` with TUS, showing a progress bar.
-4. When the upload succeeds, the app creates the `mix_versions` row (version 1).
-5. The app redirects to `/songs/[id]`.
-6. **If the upload fails,** the app shows the error with a "Try again" button. If I give up, the song simply has no mix yet, and its page says "No mix uploaded."
+1. I fill in the title and pick a file. The browser checks the type (WAV or MP3) and size (≤ 500 MB) and shows a clear error if it fails.
+2. A Server Action creates the `songs` row in my workspace.
+3. Server Action `createUploadUrl` re-checks type/size and access (via RLS), and returns a presigned PUT URL (15 min) with content type and length signed.
+4. The browser PUTs the file to R2 with XHR, showing a progress bar.
+5. Server Action `finishUpload` confirms the object exists in R2 with the right size, then creates the `mix_versions` row (version 1).
+6. The app redirects to `/songs/[id]`.
+7. **If the upload fails,** the app shows the error with a "Try again" button. If I give up, the song simply has no mix yet, and its page says "No mix uploaded."
 
 ## 8. Sessions
 
 | # | Time | Task | Done when |
 |---|---|---|---|
-| 1 | ~2 h | Create the GitHub repo, the Next.js + TypeScript + Tailwind app, and a Supabase project; connect Vercel; set environment variables | A "Hello" page is live at the Vercel URL |
-| 2 | ~2 h | Magic-link login, logout, auth callback, protected routes | Signing in and out works on the live site |
-| 3 | ~2 h | Database migrations (tables + RLS), song list and the create-song form (no file yet) | Songs I create show up in my list on the live site |
-| 4 | ~2–3 h | Private storage bucket and policies, TUS upload with progress bar, creating the `mix_versions` row | A WAV uploads with a working progress bar |
-| 5 | ~1–2 h | Song page with signed-URL playback, error states, README, full run-through of the definition of done | Every box in section 2 is checked on the live URL |
+| 1 | ~2 h | Supabase project, R2 bucket + token + CORS, connect Vercel, env vars (repo + scaffold already done) | A "Hello" page is live at the Vercel URL |
+| 2 | ~2 h | Invite-only magic-link login, logout, auth callback, `proxy.ts` protected routes | Signing in and out works on the live site |
+| 3 | ~2 h | Migrations (workspaces, members, trigger, songs, mix_versions, RLS), song list and create-song form (no file yet) | Songs I create show up in my list on the live site |
+| 4 | ~2–3 h | `src/lib/r2.ts`, presigned PUT upload with progress bar, `finishUpload` + `mix_versions` row | A WAV uploads with a working progress bar |
+| 5 | ~1–2 h | Song page with presigned-GET playback, error states, README, full run-through of the definition of done | Every box in section 2 is checked on the live URL |
 
 If a session runs over by more than an hour, stop and cut scope rather than pushing through. Write it down in the weekly notes.
 
 ## 9. Manual test checklist (run on the live site)
 
 - [ ] Upload a 3–5 MB MP3. It plays.
-- [ ] Upload a WAV under 50 MB. It plays, and the progress bar moves smoothly.
-- [ ] Try a 60 MB file. You get a clear error before the upload starts.
+- [ ] Upload a 100–300 MB WAV. It plays, and the progress bar moves smoothly.
+- [ ] Try a 600 MB file. You get a clear error before the upload starts.
 - [ ] Try a .txt or .aiff file. You get a clear error.
 - [ ] Sign out, then paste a song URL. You get sent to login.
-- [ ] Sign in from a second browser with a different email. You can't see the first account's songs.
-- [ ] Refresh the song page after an hour. Playback still works, because the page requests a fresh signed URL.
+- [ ] Try to sign in with an uninvited email. No account is created.
+- [ ] Sign in from a second browser with a second invited account. You can't see the first account's songs.
+- [ ] Copy the audio URL, wait an hour: it stops working. Refresh the page: playback works again.
 
 ## 10. Rules for working with the AI coding tool
 
-- Start each session by giving the AI this spec plus `PROJECT.md` (below), and tell it which session you're on.
+- Start each session from its GitHub issue. The AI reads `AGENTS.md`, `PROJECT.md` and this spec.
 - Ask for small steps: one feature, then review the diff, run it, and commit.
-- If the AI suggests anything in the Out of scope list, say no and add it to the Later list.
+- If the AI suggests anything in the Out of scope list, say no and open a `later` issue.
 - Make the architecture calls yourself: data model, security policies, upload approach. Let the AI handle setup code, forms, and styling.
-- Keep a short log in `NOTES.md`: what I asked the AI, what it got wrong, and what I decided. This becomes the interview story and the Week 6 write-up.
+- Keep a short log in `NOTES.md`: what I asked the AI, what it got wrong, and what I decided.
 
-## 11. `PROJECT.md` starter (keep in the repo root)
+## 11. Opening prompt for each session
 
-```markdown
-# Mix Review Portal
+> We're on Week 1, Session N: issue #X. Read the issue, `docs/specs/week-1-spec.md`, and the ADRs it
+> references. List the files you'll create or change and the commands you'll run before writing anything.
 
-## What it is
-A web app where an audio engineer shares mixes with clients, who leave
-timestamped comments and approve versions.
-
-## Current phase
-Week 1: foundation (login, songs, upload, playback). See week-1-spec.md.
-
-## Stack
-Next.js App Router + TypeScript, Tailwind, Supabase (Auth, Postgres, Storage),
-tus-js-client for uploads, Vercel hosting.
-
-## Conventions
-- Server components by default; client components only for interactivity.
-- All data access goes through Supabase with RLS. Never use the service-role
-  key in the browser.
-- Audio files upload directly from the browser to Storage. Never send them
-  through a Next.js route.
-- Keep it simple: no state libraries, no ORMs, no component libraries in Week 1.
-
-## Later list
-(waveform, share links, comments, versions, notifications, AI notes, payments, …)
-```
-
-## 12. Opening prompt for Session 1
-
-> I'm building a mix review portal. Read PROJECT.md and week-1-spec.md. We're on Session 1 only: set up a Next.js App Router + TypeScript + Tailwind project, add the Supabase client libraries and environment variable placeholders, and create a simple home page. Don't build login or database tables yet. List the commands to run and the files you'll create before writing anything.
-
-## 13. End-of-week check-in
+## 12. End-of-week check-in
 
 Answer in `NOTES.md`:
 

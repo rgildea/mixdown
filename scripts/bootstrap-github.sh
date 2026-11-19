@@ -36,16 +36,21 @@ issue() { # title labels milestone body
 }
 
 # ---------- Week 1 ----------
-issue "W1 S1: Supabase project, Vercel deploy, env vars (Hello page live)" "type:chore" "Week 1" "$(cat <<'EOF'
+issue "W1 S1: Supabase, R2, Vercel deploy, env vars (Hello page live)" "type:chore" "Week 1" "$(cat <<'EOF'
 ## What
 Repo + Next.js 16/Tailwind scaffold are done (`apps/web`). Remaining: create the Supabase
-project, connect Vercel, set env vars, and get the Hello page live. Spec: `docs/specs/week-1-spec.md` §8.
+project and R2 bucket, connect Vercel, set env vars, and get the Hello page live.
+Spec: `docs/specs/week-1-spec.md` §8. ADRs 0002, 0003, 0006.
 
 ## Steps
-- [ ] Create Supabase project (Free plan, region near you). Note the project ref.
-- [ ] `npx supabase login && npx supabase link --project-ref <ref>`
+- [ ] Supabase: create project `mixdown-dev` (Free plan). `npx supabase login && npx supabase link --project-ref <ref>`
+- [ ] Supabase → Auth → Sign In / Providers: **turn off "Allow new users to sign up"** (ADR 0004)
+- [ ] Cloudflare: enable R2, create private bucket `mixdown-dev`, create an API token scoped to
+      that bucket (Object Read & Write)
+- [ ] `npx wrangler r2 bucket cors set mixdown-dev --file infra/r2-cors.json`. If wildcard
+      origins aren't accepted, list the exact production/preview origins instead
 - [ ] Vercel → Add New Project → import this repo → **Root Directory = `apps/web`**
-- [ ] Vercel env vars (Production + Preview): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`
+- [ ] Vercel env vars (Production + Preview): all names in `apps/web/.env.example`
 - [ ] Local: `cp apps/web/.env.example apps/web/.env.local` and fill in
 
 ## Out of scope
@@ -85,13 +90,16 @@ EOF
 issue "W1 S2: Magic-link login, logout, auth callback, protected routes" "type:feature" "Week 1" "$(cat <<'EOF'
 ## What
 Spec §6 routes `/login` and `/auth/callback`; sign out; `src/proxy.ts` (Next 16's
-middleware) refreshes the Supabase session and redirects signed-out visitors on `/songs/**` to `/login`.
+middleware) refreshes the Supabase session and redirects signed-out visitors on `/songs/**` to
+`/login`. Invite-only (ADR 0004).
 
 ## Notes for the AI tool
 - Use `@supabase/ssr` helpers in `apps/web/src/lib/supabase/`. Read
   `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md` first.
-- Magic link `emailRedirectTo` = `${NEXT_PUBLIC_SITE_URL}/auth/callback`.
+- `signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: `${NEXT_PUBLIC_SITE_URL}/auth/callback` } })`.
+  Show the same "check your email" message whether or not the address is invited.
 - Supabase → Auth → URL Configuration: add the Vercel URL + `/auth/callback` to redirect URLs.
+- Invite yourself and one test account from Supabase → Auth → Users.
 - In server code use `supabase.auth.getUser()` (verified), not `getSession()`.
 
 ## Out of scope
@@ -99,55 +107,64 @@ Signup UI, passwords, OAuth, client accounts, profile pages.
 
 ## Done when
 - [ ] Sign in via emailed magic link and sign out work **on the live site**
+- [ ] An uninvited email gets no account
 - [ ] Signed-out visit to `/songs` redirects to `/login`
 EOF
 )"
 
-issue "W1 S3: Migrations (songs, mix_versions, RLS) + song list + create-song form" "type:feature" "Week 1" "$(cat <<'EOF'
+issue "W1 S3: Migrations (workspaces, songs, RLS) + song list + create-song form" "type:feature" "Week 1" "$(cat <<'EOF'
 ## What
-First migration with the schema from spec §5 plus indexes (ADR 0004). `/songs` lists my
-songs newest first (title, client, date) with a "New song" button; `/songs/new` creates a
-song with title + optional client name (Server Action). No file yet.
+First migration with the schema from spec §5 (ADR 0004): `workspaces`, `workspace_members`,
+`songs`, `mix_versions`, the `private.is_member()` helper, RLS policies, indexes, and the
+`auth.users` trigger that creates a personal workspace. `/songs` lists my workspace's songs
+newest first (title, client, date) with a "New song" button; `/songs/new` creates a song with
+title + optional client name (Server Action). No file yet.
 
 ## Notes for the AI tool
-- `npx supabase migration new init_songs`, then `npx supabase db push`.
+- `npx supabase migration new init_schema`, then `npx supabase db push`.
+- Existing invited users predate the trigger: backfill their workspaces in the migration.
+- `security definer` functions: `set search_path = ''`, fully qualify names, `private` schema.
+- Policies use `(select auth.uid())` for performance.
 - Generate types: `npx supabase gen types typescript --linked > apps/web/src/lib/database.types.ts`.
 
 ## Out of scope
-Edit/delete songs, pagination, search.
+Edit/delete songs, pagination, search, inviting members, workspace switcher.
 
 ## Done when
 - [ ] Songs I create show up in my list on the live site
-- [ ] A second account can't see them (quick check)
+- [ ] The second invited account has its own workspace and can't see them
 EOF
 )"
 
-issue "W1 S4: Private storage bucket + policies, TUS upload with progress" "type:feature" "Week 1" "$(cat <<'EOF'
+issue "W1 S4: R2 presigned upload with progress + mix_versions row" "type:feature" "Week 1" "$(cat <<'EOF'
 ## What
-Migration creating private bucket `mixes` (wav/x-wav/mpeg, 50 MB) and storage policies
-scoped to `{auth.uid()}/…`. `/songs/new` gets a file picker: client-side type/size check,
-TUS upload with `tus-js-client` and a progress bar, then insert `mix_versions` v1, then
-redirect to `/songs/[id]`. Follow ADR 0003 and spec §7.
+`src/lib/r2.ts` (`import "server-only"`, S3 client for R2). `/songs/new` gets a file picker:
+client-side type/size check (≤ 500 MB), Server Action `createUploadUrl` returns a presigned PUT,
+browser uploads via XHR with a progress bar, Server Action `finishUpload` HEADs the object and
+inserts `mix_versions` v1, then redirect to `/songs/[id]`. Follow ADR 0003 and spec §7.
 
 ## Notes for the AI tool
-- Endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`, `Authorization: Bearer <access_token>`,
-  `chunkSize: 6 * 1024 * 1024`, metadata `bucketName`, `objectName`, `contentType`.
-- Sanitize the filename for the object path; keep the original in `original_filename`.
+- `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`, endpoint
+  `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`, region `auto`.
+- Sign `ContentType` and `ContentLength` into the PUT. Key: `{workspace_id}/{song_id}/v1-{uuid}.{ext}`.
+- Access check = select the song through the user's Supabase client (RLS); no row → 404.
+- `MAX_UPLOAD_BYTES` and allowed MIME types in one shared module used by client and server.
 - Upload failure: show error + "Try again".
 
 ## Out of scope
-Multiple versions, waveform, drag-and-drop, AIFF/FLAC.
+Multipart/resumable uploads, multiple versions, waveform, drag-and-drop, AIFF/FLAC.
 
 ## Done when
-- [ ] A WAV uploads on the live site with a smoothly moving progress bar
-- [ ] 60 MB file and .txt/.aiff get a clear error before upload
+- [ ] A 100–300 MB WAV uploads on the live site with a smoothly moving progress bar
+- [ ] 600 MB file and .txt/.aiff get a clear error before upload
+- [ ] R2 secrets don't appear in the client bundle (`grep` the `.next/static` output)
 EOF
 )"
 
 issue "W1 S5: Song page playback (signed URL), error states, README, DoD run-through" "type:feature" "Week 1" "$(cat <<'EOF'
 ## What
-`/songs/[id]`: title, client, filename + size, `<audio controls>` using a 1-hour signed URL
-created on each request. "No mix uploaded" when there's no version. Not-found for other
+`/songs/[id]`: title, client, filename + size, `<audio controls>` using a 1-hour presigned R2
+GET URL created on each request after an RLS-checked read. "No mix uploaded" when there's no version. Not-found for other
 users' songs. Update README. Run the full checklist in spec §2 and §9 on the live URL.
 
 ## Done when
@@ -166,10 +183,10 @@ EOF
 )"
 
 # ---------- Weeks 2–6 (epics; split at the start of each week, not before) ----------
-issue "Week 2 epic: Client share link + waveform + timestamped comments" "epic,needs-adr" "Week 2" "$(cat <<'EOF'
+issue "Week 2 epic: Client share link + waveform + timestamped comments" "epic" "Week 2" "$(cat <<'EOF'
 The core loop: I send a client a link, they listen and comment at exact moments, I see the comments.
-- [ ] Decide ADR 0005 (client access model) first
-- [ ] Share link per song (no client account), revocable
+- [ ] 15-min spike: anonymous sign-ins work with signups disabled (ADR 0005)
+- [ ] Share link per song: `share_links`, `song_access`, `redeem_share_link()`, `can_access_song()` (ADR 0005)
 - [ ] wavesurfer.js waveform with precomputed peaks
 - [ ] Click the waveform to leave a comment at that timestamp; markers on the waveform
 - [ ] I see comments on my song page (Realtime if cheap, refresh otherwise)
@@ -182,9 +199,13 @@ issue "Week 3 epic: Versions, resolve comments, email alerts" "epic" "Week 3" "$
 - [ ] Email me when a client comments; client approves a version
 EOF
 )"
-issue "Upgrade Supabase to Pro and raise file size limits" "type:chore" "Week 4" "$(cat <<'EOF'
-Before the first real client (ADR 0003): Pro plan, raise the global + `mixes` bucket limit
-(e.g. 500 MB), update the client-side check, test a full-length 24-bit WAV.
+issue "Production environment + paid plans before first client" "type:chore" "Week 4" "$(cat <<'EOF'
+Before real client data (ADR 0002, 0006):
+- [ ] Vercel Pro (Hobby is non-commercial)
+- [ ] Supabase: create `mixdown-prod` (Pro, so it doesn't pause), `db push` all migrations, disable signups, invite myself
+- [ ] R2: create `mixdown-prod` bucket + token + CORS
+- [ ] Vercel *Production* env vars → prod; Preview/Development stay on dev
+- [ ] Smoke test the full loop on production
 EOF
 )"
 issue "Week 4 epic: Run one real client project through it" "epic" "Week 4" "$(cat <<'EOF'
@@ -212,10 +233,14 @@ for t in \
   "Custom domain and branding" \
   "Dark mode" \
   "Mobile app" \
-  "Team accounts (multiple engineers)" \
+  "Invite workspace members, roles UI, workspace switcher" \
+  "Project/album share links (one link for an EP)" \
+  "Resumable multipart uploads to R2" \
+  "Compressed streaming copy (AAC/MP3) for faster client playback" \
+  "Captcha / rate limit on anonymous sign-in before public launch" \
   "AIFF / FLAC support" \
   "Edit and delete songs" \
-  "Clean up orphaned storage objects from failed uploads" \
+  "Clean up orphaned R2 objects from unfinished uploads" \
   "Mastering presets / reference track compare" \
   "Visual design polish"; do
   issue "Later: $t" "later" "" "Parked from the plan. Triage at a weekly check-in."

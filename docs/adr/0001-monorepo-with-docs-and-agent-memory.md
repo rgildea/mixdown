@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-19
+- Decided by: Ryan (reviewed)
 
 ## Context
 Most code is written by AI coding tools from specs I write. The specs, decisions, and
@@ -13,8 +14,9 @@ One GitHub repo, npm workspaces:
 - `apps/web`: the Next.js app. Future deployables (e.g. an AI notes worker) go in `apps/*`,
   shared code in `packages/*` only once something is actually shared.
 - `supabase/`: at the root, because the schema belongs to the product, not to one app.
-- `docs/`: plan, specs, ADRs. `PROJECT.md` is the human project doc; `CLAUDE.md` is
-  agent memory and imports `PROJECT.md` so there's one source of truth.
+- `docs/`: plan, specs, ADRs. `PROJECT.md` is the project doc (stack, conventions, layout).
+- **Agent memory is tool-neutral:** `AGENTS.md` at the root holds the working rules (read by
+  Cursor, Codex and others); `CLAUDE.md` just imports `AGENTS.md` + `PROJECT.md` for Claude Code.
 - `NOTES.md`: log of working with AI.
 
 ## Alternatives considered
@@ -22,6 +24,9 @@ One GitHub repo, npm workspaces:
   in Week 5 would muddle the root. Workspaces cost nothing to set up today.
 - Turborepo/Nx: overkill for one app.
 - Docs in Notion/Google Docs: invisible to the AI tool and to reviewers.
+- `CLAUDE.md` as the only rules file: Cursor and other tools wouldn't see the rules.
+- Possible YAGNI: a second deployable may never appear (Week 5 AI work may be just server
+  actions). Kept anyway; flattening later or now is ~10 minutes either way.
 
 ## Consequences
 - Vercel project must set **Root Directory = `apps/web`**.

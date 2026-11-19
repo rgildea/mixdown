@@ -6,10 +6,10 @@ would ask "why?" about. Format: Context → Decision → Consequences. Status is
 
 | # | Decision | Status |
 |---|---|---|
-| [0001](0001-monorepo-with-docs-and-agent-memory.md) | Monorepo with code, docs and agent memory | Accepted |
-| [0002](0002-stack-nextjs-supabase-vercel.md) | Next.js 16 + Supabase + Vercel | Accepted |
-| [0003](0003-direct-to-storage-resumable-uploads.md) | Browser → Supabase Storage via TUS; private bucket + signed URLs | Accepted |
-| [0004](0004-ownership-and-rls.md) | Ownership enforced by Postgres RLS | Accepted |
-| [0005](0005-client-access-via-share-tokens.md) | Clients access via share tokens, no accounts | Proposed (Week 2) |
-| [0006](0006-schema-as-migrations.md) | Schema changes only through Supabase CLI migrations | Accepted |
-| [0007](0007-github-issues-for-planning.md) | GitHub Issues + milestones for planning; Later list as a label | Accepted |
+| [0001](0001-monorepo-with-docs-and-agent-memory.md) | Monorepo with code, docs and agent memory | Accepted (reviewed) |
+| [0002](0002-stack-nextjs-supabase-r2-vercel.md) | Next.js 16 + Supabase + Cloudflare R2 + Vercel | Accepted (reviewed) |
+| [0003](0003-audio-in-r2-presigned-urls.md) | Audio in R2 via presigned URLs; ownership checked in Supabase | Accepted (reviewed) |
+| [0004](0004-workspace-ownership-and-rls.md) | Workspaces own data; RLS enforces membership; invite-only signups | Accepted (reviewed) |
+| [0005](0005-client-access-share-link-redeem-rls.md) | Clients: share link → anonymous session → grant → RLS | Accepted (reviewed) |
+| [0006](0006-schema-as-migrations.md) | Schema and infra as code; split dev/prod before Week 4 | Accepted (reviewed) |
+| [0007](0007-github-issues-for-planning.md) | GitHub Issues + milestones for planning; Later list as a label | Accepted (reviewed) |

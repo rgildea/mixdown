@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-19
+- Decided by: Ryan (reviewed)
 
 ## Context
 The previous attempt stalled in details. Planning has to be cheap, visible, and next to the code.

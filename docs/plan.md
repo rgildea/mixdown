@@ -5,8 +5,8 @@ One complete loop: **I send a client a link → they listen and leave comments a
 timestamps → I see those comments.** Everything else waits.
 
 ## Ground rules
-1. **Use ready-made services.** Supabase for auth/DB/storage, wavesurfer.js for waveforms,
-   Vercel for hosting. Our code only does what's unique to this app.
+1. **Use ready-made services.** Supabase for auth/DB, Cloudflare R2 for audio, wavesurfer.js
+   for waveforms, Vercel for hosting. Our code only does what's unique to this app.
 2. **Keep a Later list.** Every idea becomes a GitHub issue labelled `later`, not code.
 3. **Small decisions fast.** If a choice takes >30 min, take the common default, write
    one line on why, move on.
@@ -22,7 +22,7 @@ timestamps → I see those comments.** Everything else waits.
 | 1 | Sun Nov 29 | Foundation | A live site where I can log in, upload a mix, and play it |
 | 2 | Sun Dec 6 | Core loop | Shareable client link (no account), waveform, timestamped comments |
 | 3 | Sun Dec 13 | Real workflow | Multiple versions per song, resolve comments, email alerts |
-| 4 | Sun Dec 20 | First real client | One real project runs through it. Fix only what hurts |
+| 4 | Sun Dec 20 | First real client | Prod environment + paid plans first; one real project runs through it. Fix only what hurts |
 | 5 | Sun Jan 3 | AI feature | Client voice memos/notes → timestamped task list |
 | 6 | Sun Jan 10 | Make it hireable | README w/ architecture, tests + CI, write-up, resume/LinkedIn links |
 

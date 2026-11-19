@@ -12,21 +12,25 @@ Week 1: foundation (login, songs, upload, playback). Spec: `docs/specs/week-1-sp
 Plan: `docs/plan.md`. Work items: GitHub Issues, milestone "Week 1".
 
 ## Stack (see docs/adr/)
-Next.js 16 App Router + TypeScript, Tailwind v4, Supabase (Auth, Postgres, Storage),
-tus-js-client for uploads, Vercel hosting. npm workspaces monorepo.
+Next.js 16 App Router + TypeScript, Tailwind v4, Supabase (Auth + Postgres with RLS),
+Cloudflare R2 for audio (presigned URLs), Vercel hosting. npm workspaces monorepo.
 
 ## Layout
 - `apps/web/`: the Next.js app (Vercel Root Directory)
 - `supabase/`: config + SQL migrations (source of truth for schema and RLS)
+- `infra/`: R2 bucket config (CORS)
 - `docs/`: plan, specs, ADRs
 - `NOTES.md`: log of working with AI tools, plus weekly check-ins
 
 ## Conventions
 - Server Components by default; Client Components only for interactivity.
-- All data access goes through Supabase with RLS. Never use the service-role key
-  in the browser, and never import it into a file that a Client Component imports.
-- Audio files upload directly from the browser to Storage (TUS). Never send them
-  through a Next.js route (Vercel caps bodies at ~4.5 MB).
+- Data is owned by **workspaces**; users are members (ADR 0004). Clients get access via share
+  links → anonymous session → `song_access` grant (ADR 0005). Signups are invite-only.
+- All data access goes through Supabase with RLS, using the user's session. No service-role key.
+- Audio goes browser → R2 directly via presigned PUT, and plays via presigned GET. The server only
+  signs URLs after an RLS-checked ownership read (ADR 0003). Never stream audio through Next.js.
+- R2 credentials are read only in `src/lib/r2.ts` (`import "server-only"`).
+- No Vercel-only services (KV, Blob, Edge Config) so hosting stays portable.
 - Schema changes only via migrations in `supabase/migrations/`, never by clicking in the dashboard.
 - Next.js 16: route protection lives in `src/proxy.ts` (formerly `middleware.ts`).
 - Keep it simple: no state libraries, no ORMs, no component libraries in Week 1.
