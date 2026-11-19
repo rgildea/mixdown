@@ -6,9 +6,15 @@ import { execFileSync } from "node:child_process";
 export const DEV_USERS = ["dev@example.test", "dev2@example.test"];
 
 export function localSupabase() {
-  const status = JSON.parse(
-    execFileSync("npx", ["supabase", "status", "-o", "json"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }),
-  );
+  let status;
+  try {
+    status = JSON.parse(
+      execFileSync("npx", ["supabase", "status", "-o", "json"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }),
+    );
+  } catch {
+    console.error("Local Supabase isn't running. Start it with `npm run db:start`.");
+    process.exit(1);
+  }
   const url = status.API_URL;
   if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url)) {
     throw new Error(`Refusing to seed non-local Supabase at ${url}`);
