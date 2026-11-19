@@ -5,7 +5,11 @@
 set -euo pipefail
 REPO="${REPO:?set REPO=owner/name}"
 
-label() { gh label create "$1" --repo "$REPO" --color "$2" --description "$3" --force >/dev/null; }
+# REST only (gh api), so it also works where GitHub GraphQL is unavailable.
+label() { # name color description (upsert)
+  gh api "repos/$REPO/labels" -f name="$1" -f color="$2" -f description="$3" >/dev/null 2>&1 ||
+    gh api -X PATCH "repos/$REPO/labels/$(jq -rn --arg n "$1" '$n|@uri')" -f color="$2" -f description="$3" >/dev/null
+}
 label "type:feature" 1f6feb "New capability"
 label "type:bug"     d73a4a "Something broken"
 label "type:chore"   8b949e "Setup, infra, upgrades"
@@ -27,12 +31,14 @@ milestone "Week 4" 2026-12-20 "First real client project runs through it"
 milestone "Week 5" 2027-01-03 "AI feature: voice memos / notes to a timestamped task list"
 milestone "Week 6" 2027-01-10 "Make it hireable: README, tests + CI, write-up"
 
-existing_issues=$(gh issue list --repo "$REPO" --state all --limit 500 --json title --jq '.[].title')
-issue() { # title labels milestone body
+existing_issues=$(gh api --paginate "repos/$REPO/issues?state=all&per_page=100" --jq '.[].title')
+milestones_json=$(gh api "repos/$REPO/milestones?state=all&per_page=100")
+issue() { # title labels(comma-separated) milestone-title body
   grep -qxF "$1" <<<"$existing_issues" && { echo "skip: $1"; return; }
-  local args=(--repo "$REPO" --title "$1" --label "$2" --body "$4")
-  [[ -n "$3" ]] && args+=(--milestone "$3")
-  gh issue create "${args[@]}"
+  jq -n --arg t "$1" --arg l "$2" --arg m "$3" --arg b "$4" --argjson ms "$milestones_json" '
+    {title: $t, body: $b, labels: ($l | split(","))}
+    + (if $m == "" then {} else {milestone: ($ms[] | select(.title == $m) | .number)} end)' |
+    gh api "repos/$REPO/issues" --input - --jq '"#\(.number) \(.title)"'
 }
 
 # ---------- Week 1 ----------
@@ -161,7 +167,7 @@ Multipart/resumable uploads, multiple versions, waveform, drag-and-drop, AIFF/FL
 EOF
 )"
 
-issue "W1 S5: Song page playback (signed URL), error states, README, DoD run-through" "type:feature" "Week 1" "$(cat <<'EOF'
+issue "W1 S5: Song page playback (presigned URL), error states, README, DoD run-through" "type:feature" "Week 1" "$(cat <<'EOF'
 ## What
 `/songs/[id]`: title, client, filename + size, `<audio controls>` using a 1-hour presigned R2
 GET URL created on each request after an RLS-checked read. "No mix uploaded" when there's no version. Not-found for other
