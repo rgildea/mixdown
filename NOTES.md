@@ -71,3 +71,12 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 - **Mac setup snag:** `db:start` looped on "Transport error … 127.0.0.1:54321". Cause: CleanMyMac listens on
   54321 (Supabase's default API port). Moved the project to 553xx, added a fail-fast port check, and
   made retries cloud-only (locally `supabase start` tears its containers down on failure, so retrying looped).
+
+## 2026-11-19: Hosted email + #4 shipped
+- Resend on `mail.mixdown.audio` (DNS added through Resend's Cloudflare integration), custom SMTP on
+  the dev project, `token_hash` templates pasted into the dashboard, Site URL → `/auth/callback`.
+- Verified: sign-in via the new email on a preview, then cross-device (laptop requests, phone opens)
+  on production after merging PR #30.
+- Gotcha: opening a preview link on the phone hit **Vercel's SSO page**. Preview deployments are
+  protected by Vercel Deployment Protection by default (production isn't). Kept it on; cross-device
+  checks happen on production or while logged into Vercel.

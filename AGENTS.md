@@ -40,5 +40,7 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 - Magic links use `token_hash` templates (`supabase/templates/`); `emailRedirectTo` must stay
   exactly `${origin}/auth/callback`. Template changes must also be pasted into the hosted dashboards.
 - In Playwright, `getByRole("alert")` also matches Next's route announcer; use text locators.
+- Vercel preview deployments are behind Vercel Deployment Protection (login required); production
+  isn't. Test anything "opened on another device" on production or while logged into Vercel.
 - Supabase Free plan pauses the project after 7 days idle.
 - R2 credentials are server-only: only `src/lib/r2.ts` (which imports `server-only`) may read them.
