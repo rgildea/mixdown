@@ -13,3 +13,5 @@ would ask "why?" about. Format: Context → Decision → Consequences. Status is
 | [0005](0005-client-access-share-link-redeem-rls.md) | Clients: share link → anonymous session → grant → RLS | Accepted (reviewed) |
 | [0006](0006-schema-as-migrations.md) | Schema and infra as code; split dev/prod before Week 4 | Accepted (reviewed) |
 | [0007](0007-github-issues-for-planning.md) | GitHub Issues + milestones for planning; Later list as a label | Accepted (reviewed) |
+| [0008](0008-cache-components-off.md) | Cache Components off (nearly every page is per-request) | Accepted (reviewed) |
+| [0009](0009-local-first-development.md) | Local-first dev (Supabase CLI + Mailpit), token_hash magic links, custom SMTP | Accepted (reviewed) |

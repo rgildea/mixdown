@@ -39,3 +39,35 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 
 ## Weekly check-ins
 <!-- Sunday: What shipped (link)? What did I cut? What slowed me down? Next week's one goal? -->
+
+## 2026-11-19: Issue #4, magic-link auth (Claude Code)
+- **Asked:** Build #4: invite-only magic-link login, callback, sign-out, protected `/songs`.
+- **Built:** `src/proxy.ts` + `lib/supabase/proxy.ts` (session refresh via `getClaims()`, optimistic
+  redirects), `/login` with a Server Action (`shouldCreateUser: false`, same response for unknown
+  emails), `/auth/callback` (PKCE `code` or `token_hash`), `signOut` action, `lib/auth.ts`
+  `getCurrentUser()` as the authoritative check in the `/songs` layout, `safeNext()` against open redirects.
+- **Next 16 surprises:** create-next-app enabled `cacheComponents`, so any cookie/searchParams read
+  outside `<Suspense>` fails the build. The AI first kept it and added boundaries; after walking
+  through the trade-off I **turned it off** (ADR 0008): nearly every page, share links included, is
+  per-request, so the static shell buys little and the forced boundaries cost on every page.
+  `LayoutProps`/`PageProps` types come from `next typegen`, so `typecheck` now runs it first.
+- **Also fixed earlier today:** `apps/web/.gitignore` (from create-next-app) ignored `.env.example`,
+  overriding the root `.gitignore` exception.
+- **Known limitation:** the default email template uses PKCE, so the link must be opened in the same
+  browser that requested it. Switching the template to `token_hash` would lift that; the callback already supports it.
+
+## 2026-11-19: Dev workflow decision (Claude Code)
+- **Trigger:** testing #4 on the hosted dev project hit Supabase's built-in email limit after a few
+  sign-ins ("Too many attempts").
+- **Decided (ADR 0009):** local Supabase (Docker) is the default for dev *and* AI cloud sessions;
+  hosted dev is only for Vercel previews; real magic links everywhere (no dev password backdoor);
+  `token_hash` email templates so links work across devices; custom SMTP on hosted projects.
+- **AI checked before recommending:** confirmed Docker runs in cloud sessions (needed Docker Hub,
+  since the default registry refused the shared IP), then ran the full login loop end to end via Mailpit.
+- **AI got wrong:** the first E2E helpers were flaky: Supabase's 1-email-per-user-per-second limit and
+  stale emails in the inbox. Then `getByRole("alert")` also matched Next's route announcer. Fixed;
+  the suite passed 3 runs in a row. Also caught: appending `?token_hash` to a redirect URL that already
+  had `?next=` breaks on Supabase's fallback redirect, so `next` moved into a cookie.
+- **Mac setup snag:** `db:start` looped on "Transport error … 127.0.0.1:54321". Cause: CleanMyMac listens on
+  54321 (Supabase's default API port). Moved the project to 553xx, added a fail-fast port check, and
+  made retries cloud-only (locally `supabase start` tears its containers down on failure, so retrying looped).

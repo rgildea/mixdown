@@ -11,7 +11,12 @@
     "dev": "npm run dev -w @mixdown/web",
     "build": "npm run build -w @mixdown/web",
     "lint": "npm run lint -w @mixdown/web",
-    "typecheck": "npm run typecheck -w @mixdown/web"
+    "typecheck": "npm run typecheck -w @mixdown/web",
+    "db:start": "scripts/db-start.sh",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset && node scripts/dev-seed-users.mjs",
+    "db:users": "node scripts/dev-seed-users.mjs",
+    "test:e2e": "npm run test:e2e -w @mixdown/web"
   },
   "devDependencies": {
     "supabase": "^3.2.0"

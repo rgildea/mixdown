@@ -22,15 +22,23 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 
 ## Commands (run from repo root)
 - `npm install`: install all workspaces
-- `npm run dev`: app on http://localhost:3000
+- `npm run db:start`: local Supabase + Mailpit (starts dockerd in cloud sessions), seeds dev users
+- `npm run dev`: app on http://localhost:3000 against local Supabase (`apps/web/.env.local`)
+- `npm run test:e2e`: Playwright auth tests (local stack must be running)
+- `npm run db:reset`: rebuild local DB from migrations + re-seed
 - `npm run build` / `npm run lint` / `npm run typecheck`
 - `npx supabase migration new <name>`: new SQL migration
 - `npx supabase db push`: apply migrations to the linked hosted project
-- `npx supabase start`: optional local stack (needs Docker)
 
 ## Gotchas
 - Next.js 16 differs from older training data: read `node_modules/next/dist/docs/`
   before using an API you're unsure of. Middleware is now `src/proxy.ts`.
 - `NEXT_PUBLIC_*` env vars are inlined at build time; reference them literally.
+- Develop and test against the LOCAL stack (ADR 0009), never the hosted projects. Dev users:
+  `dev@example.test`, `dev2@example.test`; read their emails from Mailpit (http://127.0.0.1:55324,
+  API at `/api/v1`). Supabase allows 1 email per user per second locally.
+- Magic links use `token_hash` templates (`supabase/templates/`); `emailRedirectTo` must stay
+  exactly `${origin}/auth/callback`. Template changes must also be pasted into the hosted dashboards.
+- In Playwright, `getByRole("alert")` also matches Next's route announcer; use text locators.
 - Supabase Free plan pauses the project after 7 days idle.
 - R2 credentials are server-only: only `src/lib/r2.ts` (which imports `server-only`) may read them.

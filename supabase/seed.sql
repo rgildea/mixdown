@@ -1,0 +1,4 @@
+-- Local seed data, applied by `supabase start` / `npm run db:reset` after migrations.
+-- Dev *users* are not created here: scripts/dev-seed-users.mjs uses the Auth admin API instead
+-- (inserting into auth.users by hand is brittle across Supabase versions). Each user gets a
+-- personal workspace via the auth.users trigger once that migration exists (issue #5).
