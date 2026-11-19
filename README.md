@@ -13,27 +13,33 @@ Cloudflare R2 (audio, presigned URLs) · Vercel. Decisions and trade-offs are re
 [`docs/adr/`](docs/adr/).
 
 ## Run locally
-Prerequisites: Node 22+, a Supabase project and a Cloudflare R2 bucket (free tiers work).
+Prerequisites: Node 22+ and a Docker runtime ([OrbStack](https://orbstack.dev) or Docker Desktop).
+Everything runs against a local Supabase stack. Email goes to Mailpit, not real inboxes.
 
 ```bash
 npm install
-cp apps/web/.env.example apps/web/.env.local   # fill in Supabase + R2 values
-npm run dev                                    # http://localhost:3000
+npm run db:start          # local Supabase + Mailpit, applies migrations, seeds dev users
+cp apps/web/.env.example apps/web/.env.local   # local values are pre-filled
+npm run dev               # http://localhost:3000
 ```
 
-Database schema lives in `supabase/migrations/`. To apply it to your project:
+Sign in as `dev@example.test`, then click the link in Mailpit at http://127.0.0.1:54324.
 
-```bash
-npx supabase login
-npx supabase link --project-ref <your-project-ref>
-npx supabase db push
-```
+| Command | What |
+|---|---|
+| `npm run db:reset` | Rebuild the local DB from migrations and re-seed dev users |
+| `npm run test:e2e` | Playwright tests (needs `db:start`; first time on a Mac: `npx playwright install chromium`) |
+| `npm run db:stop` | Stop the local stack |
+
+Hosted environments (Vercel previews and production) use their own Supabase projects and R2 buckets;
+see [ADR 0009](docs/adr/0009-local-first-development.md) and issue #1 for setup.
 
 ## Repo layout
 | Path | What |
 |---|---|
 | `apps/web/` | Next.js app (deployed to Vercel with Root Directory = `apps/web`) |
-| `supabase/` | Supabase config and SQL migrations (tables, RLS, functions) |
+| `supabase/` | Supabase config, SQL migrations (tables, RLS, functions), email templates |
+| `scripts/` | Local stack start, dev-user seeding, GitHub bootstrap |
 | `infra/` | R2 bucket CORS config |
 | `docs/plan.md` | Six-week plan, ground rules, weekly check-in |
 | `docs/specs/` | Per-week / per-feature specs handed to the AI coding tool |

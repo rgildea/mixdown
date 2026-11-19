@@ -23,8 +23,8 @@ not run against it.
   - Weeks 1–3: one hosted Supabase project (`mixdown-dev`) for local dev, previews and production.
   - **Before Week 4:** create `mixdown-prod` (Supabase) and a prod R2 bucket, `db push` all migrations,
     point Vercel *Production* env vars at them. Previews and local stay on dev.
-  - Week 6: add the local Docker stack (`supabase start`) for automated tests, and apply migrations
-    from GitHub Actions instead of by hand.
+  - ~~Week 6: add the local Docker stack~~ **Brought forward by ADR 0009:** local Supabase is the
+    default dev environment now. Week 6 still moves migration deploys into GitHub Actions.
 
 ## Alternatives considered
 - Dev + prod from Session 1: same end state, double the setup in the momentum-critical first week.

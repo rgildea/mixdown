@@ -2,31 +2,36 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/safe-next";
+import { NEXT_COOKIE } from "@/lib/auth-next";
+
+const OTP_TYPES: EmailOtpType[] = ["email", "magiclink", "invite"];
 
 /**
- * Finishes a magic-link sign-in. Supports both link styles Supabase can send:
- * - `?code=…` (PKCE, the default template; must be opened in the browser that requested it)
- * - `?token_hash=…&type=…` (custom email template; works across browsers/devices)
+ * Finishes an email sign-in (ADR 0009). Supports:
+ * - `?token_hash=…&type=email|invite` from our email templates; works on any device
+ * - `?code=…` (PKCE), the Supabase default template; only works in the requesting browser
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
-  const next = safeNext(searchParams.get("next"));
+  const next = safeNext(searchParams.get("next") ?? request.cookies.get(NEXT_COOKIE)?.value);
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
 
   const supabase = await createClient();
-  let error: unknown = new Error("missing code");
+  let error: unknown = new Error("missing token");
 
-  if (code) {
-    ({ error } = await supabase.auth.exchangeCodeForSession(code));
-  } else if (tokenHash && type) {
+  if (tokenHash && type && OTP_TYPES.includes(type)) {
     ({ error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type }));
+  } else if (code) {
+    ({ error } = await supabase.auth.exchangeCodeForSession(code));
   }
 
   if (error) {
     console.warn("auth callback failed:", error instanceof Error ? error.message : error);
     return NextResponse.redirect(new URL("/login?error=link", origin));
   }
-  return NextResponse.redirect(new URL(next, origin));
+  const response = NextResponse.redirect(new URL(next, origin));
+  response.cookies.delete({ name: NEXT_COOKIE, path: "/auth" });
+  return response;
 }
