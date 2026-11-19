@@ -68,3 +68,6 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
   stale emails in the inbox. Then `getByRole("alert")` also matched Next's route announcer. Fixed;
   the suite passed 3 runs in a row. Also caught: appending `?token_hash` to a redirect URL that already
   had `?next=` breaks on Supabase's fallback redirect, so `next` moved into a cookie.
+- **Mac setup snag:** `db:start` looped on "Transport error … 127.0.0.1:54321". Cause: CleanMyMac listens on
+  54321 (Supabase's default API port). Moved the project to 553xx, added a fail-fast port check, and
+  made retries cloud-only (locally `supabase start` tears its containers down on failure, so retrying looped).

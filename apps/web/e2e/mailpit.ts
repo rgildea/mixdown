@@ -1,7 +1,7 @@
 // Minimal Mailpit API client: https://mailpit.axllent.org/docs/api-v1/
 import { expect, type Page } from "@playwright/test";
 
-const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
+const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:55324";
 const MIN_GAP_MS = 1_100; // Supabase allows one email per user per second (auth.email.max_frequency)
 
 type Summary = { ID: string; Created: string; To: { Address: string }[] };

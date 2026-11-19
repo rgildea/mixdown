@@ -35,7 +35,7 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
   before using an API you're unsure of. Middleware is now `src/proxy.ts`.
 - `NEXT_PUBLIC_*` env vars are inlined at build time; reference them literally.
 - Develop and test against the LOCAL stack (ADR 0009), never the hosted projects. Dev users:
-  `dev@example.test`, `dev2@example.test`; read their emails from Mailpit (http://127.0.0.1:54324,
+  `dev@example.test`, `dev2@example.test`; read their emails from Mailpit (http://127.0.0.1:55324,
   API at `/api/v1`). Supabase allows 1 email per user per second locally.
 - Magic links use `token_hash` templates (`supabase/templates/`); `emailRedirectTo` must stay
   exactly `${origin}/auth/callback`. Template changes must also be pasted into the hosted dashboards.

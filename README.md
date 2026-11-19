@@ -23,7 +23,7 @@ cp apps/web/.env.example apps/web/.env.local   # local values are pre-filled
 npm run dev               # http://localhost:3000
 ```
 
-Sign in as `dev@example.test`, then click the link in Mailpit at http://127.0.0.1:54324.
+Sign in as `dev@example.test`, then click the link in Mailpit at http://127.0.0.1:55324.
 
 | Command | What |
 |---|---|

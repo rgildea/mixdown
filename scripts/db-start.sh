@@ -18,6 +18,16 @@ fi
 if [[ -n "${CLAUDE_CODE_REMOTE:-}" ]]; then export SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io; fi
 
 # Audio lives in R2 (ADR 0002), so skip Storage and other services we don't use.
+# Fail fast if another app already holds our API port (e.g. CleanMyMac on 54321, which is why
+# this project uses 553xx). Skip the check when our own stack is already running.
+API_PORT=55321
+if ! docker ps --format '{{.Names}}' | grep -qx supabase_kong_mixdown &&
+  (exec 3<>"/dev/tcp/127.0.0.1/$API_PORT") 2>/dev/null; then
+  echo "Port $API_PORT is already in use by another app. Find it with:" >&2
+  echo "  lsof -nP -iTCP:$API_PORT -sTCP:LISTEN" >&2
+  exit 1
+fi
+
 # Extra args are passed through, e.g. `npm run db:start -- --debug`.
 start() { npx supabase start -x studio,imgproxy,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta "$@"; }
 
@@ -35,6 +45,6 @@ else
 fi
 node scripts/dev-seed-users.mjs
 echo
-echo "App env (apps/web/.env.local): NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321"
+echo "App env (apps/web/.env.local): NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321"
 echo "  NEXT_PUBLIC_SUPABASE_ANON_KEY=\$(npx supabase status -o json | jq -r .ANON_KEY)"
-echo "Mailpit (catches all email): http://127.0.0.1:54324"
+echo "Mailpit (catches all email): http://127.0.0.1:55324"

@@ -18,7 +18,7 @@ because the default registry rejects the shared proxy IP).
 **Environments**
 | Env | Supabase | Email | Used for |
 |---|---|---|---|
-| Local (Mac *and* cloud sessions) | CLI stack in Docker (`npm run db:start`) | Mailpit, http://127.0.0.1:54324 | Daily dev, migrations, E2E tests |
+| Local (Mac *and* cloud sessions) | CLI stack in Docker (`npm run db:start`) | Mailpit, http://127.0.0.1:55324 | Daily dev, migrations, E2E tests |
 | Hosted dev | `mixdown-dev` (Free) | Custom SMTP | Vercel previews |
 | Prod (before Week 4) | `mixdown-prod` (Pro) | Custom SMTP | Me and real clients |
 
