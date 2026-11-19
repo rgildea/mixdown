@@ -47,9 +47,10 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
   emails), `/auth/callback` (PKCE `code` or `token_hash`), `signOut` action, `lib/auth.ts`
   `getCurrentUser()` as the authoritative check in the `/songs` layout, `safeNext()` against open redirects.
 - **Next 16 surprises:** create-next-app enabled `cacheComponents`, so any cookie/searchParams read
-  outside `<Suspense>` fails the build. Followed the bundled "authentication with Cache Components"
-  guide rather than turning it off. `LayoutProps`/`PageProps` types come from `next typegen`, so
-  `typecheck` now runs it first.
+  outside `<Suspense>` fails the build. The AI first kept it and added boundaries; after walking
+  through the trade-off I **turned it off** (ADR 0008): nearly every page, share links included, is
+  per-request, so the static shell buys little and the forced boundaries cost on every page.
+  `LayoutProps`/`PageProps` types come from `next typegen`, so `typecheck` now runs it first.
 - **Also fixed earlier today:** `apps/web/.gitignore` (from create-next-app) ignored `.env.example`,
   overriding the root `.gitignore` exception.
 - **Known limitation:** the default email template uses PKCE, so the link must be opened in the same

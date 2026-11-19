@@ -7,8 +7,8 @@ export type CurrentUser = { id: string; email: string | null };
 
 /**
  * Data Access Layer entry point: the verified current user, or a redirect to /login.
- * `getUser()` validates the session with Supabase Auth. Deduplicated per request.
- * Reads cookies, so callers must render inside a <Suspense> boundary (Cache Components).
+ * `getUser()` validates the session with Supabase Auth. Deduplicated per request, so calling
+ * it from both a layout and a page costs one round-trip.
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   const supabase = await createClient();
