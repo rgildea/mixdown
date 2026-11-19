@@ -18,13 +18,21 @@ fi
 if [[ -n "${CLAUDE_CODE_REMOTE:-}" ]]; then export SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io; fi
 
 # Audio lives in R2 (ADR 0002), so skip Storage and other services we don't use.
-# Containers left over from a restarted Docker daemon come back on their own, but can still be
-# booting when the CLI checks, so retry a few times.
-for attempt in 1 2 3 4 5; do
-  npx supabase start -x studio,imgproxy,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta && break
-  [[ $attempt == 5 ]] && exit 1
-  echo "Stack not ready yet, retrying in 5s…"; sleep 5
-done
+# Extra args are passed through, e.g. `npm run db:start -- --debug`.
+start() { npx supabase start -x studio,imgproxy,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta "$@"; }
+
+if [[ -n "${CLAUDE_CODE_REMOTE:-}" ]]; then
+  # Cloud sessions only: after a worker restart, old containers come back with the Docker daemon
+  # and can still be booting when the CLI checks them, so retry a couple of times.
+  for attempt in 1 2 3; do
+    start "$@" && break
+    [[ $attempt == 3 ]] && exit 1
+    echo "Stack not ready yet, retrying in 5s…"; sleep 5
+  done
+else
+  # Locally, a failure is a real error: stop and show it rather than loop.
+  start "$@"
+fi
 node scripts/dev-seed-users.mjs
 echo
 echo "App env (apps/web/.env.local): NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321"
