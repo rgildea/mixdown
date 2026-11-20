@@ -29,7 +29,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # Full history so the reviewer can diff the PR against its base locally.
+          fetch-depth: 0
 
       - name: Run Claude Code Review
         id: claude-review
@@ -39,7 +40,10 @@ jobs:
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
           prompt: '/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
-          claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment"'
+          # The reviewer must be able to READ the PR, not only comment on it. With only the comment
+          # tool allowed it couldn't see the diff and returned "No issues found" in ~4 turns.
+          # Read-only gh/git subcommands + file tools; no edits, no arbitrary shell.
+          claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Read,Grep,Glob"'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
