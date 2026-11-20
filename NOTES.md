@@ -215,3 +215,13 @@ lined up (#2 closed).
 - **AI got wrong:** told Ryan to stop + start the stack after pulling. A restarted stack keeps its DB and
   doesn't apply new migrations, so the seed script's `invite_user()` call failed. `db:start` now runs
   `supabase migration up` before seeding; reproduced the failing case and verified the fix.
+- **Independent review of PR #50 found a HIGH issue, confirmed live:** with signups on, an allowlisted
+  email with no account yet could be claimed by anyone via the public `/auth/v1/signup` with their own
+  password. Ryan asked how, since the app only does magic links. Answer: the auth API is public (anon key),
+  and password signup exists whether or not our UI uses it. **The UI is not a security boundary.**
+  Fix (Ryan's call): invite creates the account in the same step (`npm run invite`), the login form never
+  creates accounts, anonymous users never become permanent, and email changes are restricted. Four API
+  attack tests added. A mutation check showed the anonymous-takeover test really depends on the guard
+  (my first manual probe of that attack had "failed" for an incidental reason; it is exploitable).
+- **AI got wrong:** proposed and built "allowlist-only invites" without modelling the raw API as an
+  attacker would. The review agent did; the bot review on #50 hadn't run yet.

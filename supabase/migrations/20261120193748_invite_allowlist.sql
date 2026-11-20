@@ -2,9 +2,13 @@
 --
 -- Why: Supabase's global "signups off" switch also blocks anonymous sign-ins, which client share
 -- links need (ADR 0005). So signups are switched ON and this migration decides who may exist:
---   * anonymous users (share-link clients): allowed;
+--   * anonymous users (share-link clients): allowed, but they can NEVER become permanent accounts
+--     or set an email (a future "client accounts" feature needs its own ADR);
 --   * everyone else: only if their email is on private.invites;
---   * an anonymous user may become a permanent account only with an invited email.
+--   * a permanent user can't change their email to an uninvited address.
+-- Inviting = allowlisting AND creating the account in the same step (scripts/invite.mjs), so there is
+-- never an "invited but unregistered" email someone else could claim first via the public
+-- /auth/v1/signup endpoint (found in the PR #50 review). /signup can't touch an existing account.
 -- It fails CLOSED: any project running these migrations is invite-only regardless of dashboard settings.
 -- Rollout order on hosted: apply this migration FIRST, then turn signups + anonymous sign-ins on.
 
@@ -45,11 +49,13 @@ begin
     raise exception 'Mixdown is invite-only' using errcode = '42501';
   end if;
 
-  -- UPDATE: an anonymous user can only turn into a permanent account (or set an email) if invited.
-  -- Ordinary updates (metadata such as a display name, session refreshes) pass through.
-  if old.is_anonymous
-     and (not new.is_anonymous or new.email is distinct from old.email)
-     and not private.is_invited(new.email) then
+  -- UPDATE. Ordinary updates (metadata such as a display name, session refreshes) pass through.
+  -- Anonymous users never become permanent and never get an email.
+  if old.is_anonymous and (not new.is_anonymous or new.email is distinct from old.email) then
+    raise exception 'Mixdown is invite-only' using errcode = '42501';
+  end if;
+  -- A permanent user can't move their account to an uninvited address.
+  if not old.is_anonymous and new.email is distinct from old.email and not private.is_invited(new.email) then
     raise exception 'Mixdown is invite-only' using errcode = '42501';
   end if;
   return new;
@@ -61,8 +67,8 @@ create trigger guard_auth_users
   before insert or update on auth.users
   for each row execute function private.guard_auth_users();
 
--- Inviting someone: `select public.invite_user('a@b.com');` in the SQL editor (hosted), or
--- `npm run db:users -- a@b.com` (local). Callable through the API by the service role ONLY.
+-- Allowlists an email. Use scripts/invite.mjs (`npm run invite -- a@b.com`), which calls this AND creates
+-- the account in one step. Callable through the API by the service role ONLY.
 create function public.invite_user(email text)
 returns void
 language plpgsql

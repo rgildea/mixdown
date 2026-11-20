@@ -2,7 +2,7 @@
 -- Mirrors the probes in docs/spikes/2026-11-20-anonymous-auth-vs-invite-only.md.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(18);
 
 create function pg_temp.login_as(uid uuid) returns void language sql as $$
   select set_config('role', 'authenticated', true),
@@ -46,10 +46,21 @@ select lives_ok(
   $$ update auth.users set raw_user_meta_data = '{"display_name":"J.R."}' where id = 'a0000000-0000-0000-0000-000000000003' $$,
   'an anonymous user can still set a display name');
 
+-- Even with an invited email: otherwise anyone could claim an invited address via an anonymous session
+-- (PR #50 review). A future client-accounts feature needs its own ADR.
 select public.invite_user('client@example.test');
-select lives_ok(
+select throws_ok(
   $$ update auth.users set email = 'client@example.test', is_anonymous = false where id = 'a0000000-0000-0000-0000-000000000003' $$,
-  'an anonymous user CAN become permanent with an invited email (future client accounts)');
+  '42501', 'Mixdown is invite-only', 'an anonymous user cannot become permanent even with an invited email');
+
+-- ---------- Permanent users can't move to an uninvited address ----------
+select throws_ok(
+  $$ update auth.users set email = 'elsewhere@example.test' where id = 'a0000000-0000-0000-0000-000000000002' $$,
+  '42501', 'Mixdown is invite-only', 'a permanent user cannot change to an uninvited email');
+select public.invite_user('new-address@example.test');
+select lives_ok(
+  $$ update auth.users set email = 'new-address@example.test' where id = 'a0000000-0000-0000-0000-000000000002' $$,
+  'a permanent user can change to an invited email');
 
 -- ---------- Only the service role can invite ----------
 select pg_temp.login_as('a0000000-0000-0000-0000-000000000002');
