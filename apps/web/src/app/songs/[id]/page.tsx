@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace";
 import { presignPlayback } from "@/lib/r2";
@@ -41,9 +40,10 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
     .eq("song_id", song.id)
     .is("revoked_at", null)
     .maybeSingle();
-  const h = await headers();
-  const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
-  const shareUrl = link ? `${origin}/s/${link.token}` : null;
+  // Built from the configured site URL, not request headers: a link copied on a (login-protected)
+  // Vercel preview still points at production, and no proxy header can change the domain.
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const shareUrl = link ? `${siteUrl}/s/${link.token}` : null;
 
   return (
     <main className="flex flex-col gap-6">

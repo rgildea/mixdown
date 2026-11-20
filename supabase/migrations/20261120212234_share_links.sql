@@ -9,7 +9,7 @@
 create table public.share_links (
   id         uuid primary key default gen_random_uuid(),
   song_id    uuid not null references public.songs (id) on delete cascade,
-  token      text not null unique check (char_length(token) >= 32),
+  token      text not null unique check (token ~ '^[A-Za-z0-9_-]{32,64}$'),  -- 192-bit base64url from the app
   created_by uuid not null default auth.uid() references auth.users (id),
   created_at timestamptz not null default now(),
   expires_at timestamptz,            -- unused in v1 (null = never)
@@ -48,7 +48,7 @@ as $$
   select exists (
     select 1
     from public.song_access a
-    join public.share_links l on l.id = a.share_link_id
+    join public.share_links l on l.id = a.share_link_id and l.song_id = a.song_id
     where a.song_id = sid
       and a.user_id = (select auth.uid())
       and l.revoked_at is null
@@ -91,10 +91,12 @@ create policy "members can create links as themselves"
   on public.share_links for insert to authenticated
   with check (private.is_song_member(song_id) and created_by = (select auth.uid()));
 
+-- Revoking is final: revoked_at can be set but never cleared (un-revoking would revive the old token and
+-- every grant tied to it). Found in the PR #52 review.
 create policy "members can revoke their songs' links"
   on public.share_links for update to authenticated
   using (private.is_song_member(song_id))
-  with check (private.is_song_member(song_id));
+  with check (private.is_song_member(song_id) and revoked_at is not null);
 
 revoke update on public.share_links from authenticated;
 grant update (revoked_at) on public.share_links to authenticated;

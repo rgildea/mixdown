@@ -1,14 +1,15 @@
 -- Share links + client grants (ADR 0005, issue #43). Run: npm run db:test
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(37);
 
 -- Fixtures: engineers Alice and Bob (separate studios), anonymous client Carol.
 select public.invite_user('alice@example.test'), public.invite_user('bob@example.test');
 insert into auth.users (id, email, aud, role, is_anonymous) values
   ('a1111111-1111-1111-1111-111111111111', 'alice@example.test', 'authenticated', 'authenticated', false),
   ('b2222222-2222-2222-2222-222222222222', 'bob@example.test',   'authenticated', 'authenticated', false),
-  ('c3333333-3333-3333-3333-333333333333', null,                 'authenticated', 'authenticated', true);
+  ('c3333333-3333-3333-3333-333333333333', null,                 'authenticated', 'authenticated', true),
+  ('d4444444-4444-4444-4444-444444444444', null,                 'authenticated', 'authenticated', true);
 
 create temp table fx (k text primary key, v uuid);
 grant select on fx to authenticated;
@@ -41,6 +42,8 @@ select throws_ok($$ insert into public.share_links (song_id, token) values ('5b0
   '42501', null, 'a member cannot create a link for another studio''s song');
 select throws_ok($$ insert into public.share_links (song_id, token, created_by) values ('5a000000-0000-0000-0000-00000000000a', 'tok-spoof-xxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'b2222222-2222-2222-2222-222222222222') $$,
   '42501', null, 'a link cannot be created as someone else');
+select throws_ok($$ insert into public.share_links (song_id, token) values ('5a000000-0000-0000-0000-00000000000a', 'aaaa') $$,
+  '23514', null, 'tokens must look like generated tokens (format check)');
 select throws_ok($$ update public.share_links set token = 'tok-changed-xxxxxxxxxxxxxxxxxxxxxxxxxx' $$,
   '42501', null, 'the token cannot be changed (only revoked_at is updatable)');
 select is((select count(*)::int from public.share_links), 1, 'a member sees their song''s link (and can re-copy it)');
@@ -78,11 +81,25 @@ update public.share_links set revoked_at = now();
 reset role;
 select is((select count(*)::int from public.share_links where revoked_at is not null), 0, 'a client cannot revoke links');
 
+-- ---------- Grants are private ----------
+select pg_temp.login_as('b2222222-2222-2222-2222-222222222222');
+select is((select count(*)::int from public.song_access), 0, 'another studio cannot see grants on Alice''s song');
+update public.share_links set revoked_at = now();
+reset role;
+select is((select count(*)::int from public.share_links where revoked_at is not null), 0, 'another studio cannot revoke Alice''s link');
+select pg_temp.login_as('d4444444-4444-4444-4444-444444444444');
+select is((select count(*)::int from public.song_access), 0, 'one client cannot see another client''s grant');
+select pg_temp.login_as('a1111111-1111-1111-1111-111111111111');
+select is((select count(*)::int from public.song_access), 1, 'the studio sees grants on its own song');
+
 -- ---------- Revoking cuts off everyone who used the link ----------
 select pg_temp.login_as('a1111111-1111-1111-1111-111111111111');
 update public.share_links set revoked_at = now() where song_id = '5a000000-0000-0000-0000-00000000000a';
+select throws_ok($$ update public.share_links set revoked_at = null where song_id = '5a000000-0000-0000-0000-00000000000a' $$,
+  '42501', null, 'revoking is final: a member cannot un-revoke a link');
 select pg_temp.login_as('c3333333-3333-3333-3333-333333333333');
 select is(pg_temp.carol_sees_alice_song(), 0, 'after revoking, the client loses access');
+select is((select count(*)::int from public.mix_versions), 0, '…including to the mix versions');
 select is(public.redeem_share_link('tok-alice-1-xxxxxxxxxxxxxxxxxxxxxxxxxx'), null, 'a revoked link cannot be redeemed');
 
 -- A new link restores access for whoever redeems it.
@@ -97,6 +114,7 @@ reset role;
 update public.share_links set expires_at = now() - interval '1 minute' where token = 'tok-alice-3-xxxxxxxxxxxxxxxxxxxxxxxxxx';
 select pg_temp.login_as('c3333333-3333-3333-3333-333333333333');
 select is(pg_temp.carol_sees_alice_song(), 0, 'an expired link no longer grants access');
+select is((select count(*)::int from public.mix_versions), 0, '…including to the mix versions');
 
 -- ---------- Members don't get client grants; signed-out callers can't redeem ----------
 reset role;
@@ -104,9 +122,12 @@ update public.share_links set expires_at = null where token = 'tok-alice-3-xxxxx
 select pg_temp.login_as('a1111111-1111-1111-1111-111111111111');
 select isnt(public.redeem_share_link('tok-alice-3-xxxxxxxxxxxxxxxxxxxxxxxxxx'), null, 'a member opening their own link works');
 select is((select count(*)::int from public.song_access where user_id = 'a1111111-1111-1111-1111-111111111111'), 0, '…without creating a client grant');
+select set_config('request.jwt.claims', '{}', true);
+select throws_ok($$ select public.redeem_share_link('tok-alice-3-xxxxxxxxxxxxxxxxxxxxxxxxxx') $$,
+  '42501', 'Sign in required', 'redeem refuses a caller with no user (the function''s own check)');
 reset role;
 set local role anon;
-select throws_ok($$ select public.redeem_share_link('tok-alice-3-xxxxxxxxxxxxxxxxxxxxxxxxxx') $$, '42501', null, 'signed-out callers cannot redeem');
+select throws_ok($$ select public.redeem_share_link('tok-alice-3-xxxxxxxxxxxxxxxxxxxxxxxxxx') $$, '42501', null, 'signed-out callers cannot redeem (no execute privilege)');
 
 select * from finish();
 rollback;

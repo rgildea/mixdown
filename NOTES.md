@@ -240,3 +240,10 @@ lined up (#2 closed).
   songs read policy re-queried `songs`, which can't see a row inserted in the same statement, so creating a
   song failed. pgTAP missed it (no `insert … returning` test); the E2E suite caught it. Fixed, a regression
   test was added, and the rule is in AGENTS.md.
+- **Independent review of PR #52:** nothing exploitable at high or medium severity. It found that a member could
+  **un-revoke** a link via the raw API (confirmed live; now refused), plus untested claims: revoking
+  cutting off *versions*, grant privacy, and cross-studio revoke. All now tested and mutation-checked (4 more
+  mutations caught). Also: token format enforced, link↔song check in grants, share URLs from
+  `NEXT_PUBLIC_SITE_URL` instead of request headers, honest "audio already open lasts up to an hour"
+  text. Per-row RLS function cost moved to Later #53.
+- **AI got wrong:** miscounted pgTAP plans twice (the harmless kind of failure).

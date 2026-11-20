@@ -35,7 +35,8 @@ export function SharePanel({ songId, url }: { songId: string; url: string | null
       <div>
         <h2 className="font-medium">Share with your client</h2>
         <p className="text-sm text-zinc-500">
-          Anyone with this link can listen and leave comments, without an account. Revoke it to cut off access.
+          Anyone with this link can listen and leave comments, without an account. Revoking it cuts off
+          access (already-open audio can keep playing for up to an hour).
         </p>
       </div>
 
@@ -60,7 +61,7 @@ export function SharePanel({ songId, url }: { songId: string; url: string | null
               type="button"
               disabled={pending}
               onClick={() => {
-                if (confirm("Revoke this link? Anyone using it loses access immediately.")) {
+                if (confirm("Revoke this link? It stops working right away; audio someone already has open can keep playing for up to an hour. This can't be undone.")) {
                   run(() => revokeShareLink(songId));
                 }
               }}
