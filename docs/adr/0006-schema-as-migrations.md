@@ -12,16 +12,16 @@ not run against it.
 ## Decision
 - **Postgres:** every table, policy, function and trigger goes through
   `npx supabase migration new <name>` → SQL in `supabase/migrations/` → reviewed in the PR.
-  Apply with `npx supabase db push` to the linked project.
+  Apply with `npx supabase db push --remote` to the linked project (CLI v3 defaults to local;
+  preview first with `--dry-run`).
 - **Ordering rule:** push a migration *before* merging code that depends on it, and keep
   migrations backward-compatible with the currently deployed code (add, then use, then remove).
 - **R2:** bucket CORS rules live in `infra/r2-cors.json`, applied with `wrangler r2 bucket cors set`.
   Bucket creation and API tokens are documented steps in the README (one-time).
-- **Types:** `npx supabase gen types typescript --linked > apps/web/src/lib/database.types.ts`
-  after each migration, committed.
+- **Types:** `npm run db:types` (generated from the local stack) after each migration, committed.
 - **Environments:**
   - Weeks 1–3: one hosted Supabase project (`mixdown-dev`) for local dev, previews and production.
-  - **Before Week 4:** create `mixdown-prod` (Supabase) and a prod R2 bucket, `db push` all migrations,
+  - **Before Week 4:** create `mixdown-prod` (Supabase) and a prod R2 bucket, `db push --remote` all migrations,
     point Vercel *Production* env vars at them. Previews and local stay on dev.
   - ~~Week 6: add the local Docker stack~~ **Brought forward by ADR 0009:** local Supabase is the
     default dev environment now. Week 6 still moves migration deploys into GitHub Actions.

@@ -33,7 +33,9 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
   `MIXDOWN_STUDIO=1`. It bypasses RLS, so never use it as evidence of what a user can see.
 - `npm run build` / `npm run lint` / `npm run typecheck`
 - `npx supabase migration new <name>`: new SQL migration
-- `npx supabase db push`: apply migrations to the linked hosted project
+- `npx supabase db push --remote --dry-run`, then without `--dry-run`: apply migrations to the linked
+  hosted project. Supabase CLI v3 targets the LOCAL stack by default; hosted needs `--remote`.
+  `npx supabase migration list --remote` shows what's applied where.
 
 ## Gotchas
 - Next.js 16 differs from older training data: read `node_modules/next/dist/docs/`

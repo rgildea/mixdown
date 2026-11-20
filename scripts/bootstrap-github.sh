@@ -127,11 +127,11 @@ newest first (title, client, date) with a "New song" button; `/songs/new` create
 title + optional client name (Server Action). No file yet.
 
 ## Notes for the AI tool
-- `npx supabase migration new init_schema`, then `npx supabase db push`.
+- `npx supabase migration new init_schema`, then `npx supabase db push --remote`.
 - Existing invited users predate the trigger: backfill their workspaces in the migration.
 - `security definer` functions: `set search_path = ''`, fully qualify names, `private` schema.
 - Policies use `(select auth.uid())` for performance.
-- Generate types: `npx supabase gen types typescript --linked > apps/web/src/lib/database.types.ts`.
+- Generate types: `npm run db:types`.
 
 ## Out of scope
 Edit/delete songs, pagination, search, inviting members, workspace switcher.
@@ -208,7 +208,7 @@ EOF
 issue "Production environment + paid plans before first client" "type:chore" "Week 4" "$(cat <<'EOF'
 Before real client data (ADR 0002, 0006):
 - [ ] Vercel Pro (Hobby is non-commercial)
-- [ ] Supabase: create `mixdown-prod` (Pro, so it doesn't pause), `db push` all migrations, disable signups, invite myself
+- [ ] Supabase: create `mixdown-prod` (Pro, so it doesn't pause), `db push --remote` all migrations, disable signups, invite myself
 - [ ] R2: create `mixdown-prod` bucket + token + CORS
 - [ ] Vercel *Production* env vars → prod; Preview/Development stay on dev
 - [ ] Smoke test the full loop on production
