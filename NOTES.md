@@ -96,3 +96,38 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
   failed on the Mac. Suspected Docker VM clock drift after sleep; unconfirmed (clocks matched when
   checked afterwards, and a stale dev server would also explain it). Now matches by unseen message ID,
   which removes the clock dependency either way.
+
+## 2026-11-20: Issue #6, uploads (Claude Code)
+- **Decided:** local audio storage = RustFS. The AI probed before recommending: MinIO's Docker Hub
+  images no longer exist; RustFS passed presigned PUT/HEAD/range GET/CORS checks.
+- **Caught by the probe:** the AWS SDK signs only `content-length` into presigned PUTs by default, so a
+  wrong content type would have been accepted by R2 too. Fixed with `signableHeaders`; mismatches now 403.
+- **Built:** shared upload rules (by extension, canonical MIME), `lib/r2.ts` (server-only; R2 or RustFS),
+  `createSong` → `createUploadUrl` → XHR PUT with progress → `finishUpload` (key-prefix check, HEAD
+  size/type check, then the `mix_versions` row), "Try again" without creating a second song, "No mix yet"
+  in the list. 5 new E2E tests (WAV, MP3, no file, 600 MB sparse file, .txt/.aiff).
+- **Verified:** progress bar on a throttled 200 MB upload (screenshot at 43%); canary build shows no R2
+  secret or S3 code in client chunks. The first grep "found" hits, but they were React's `-canary` version string.
+- **AI got wrong:** used refs for render-visible state; the React lint rules flagged it, so it switched to state.
+- **UX fix from Ryan's local test:** the bare file input was easy to miss (two songs created without a mix).
+  Now a bordered picker with a real button and a "Ready to upload: name (size)" confirmation, the mix is
+  required (matches the spec flow; "Skip for now" remains after a failed upload), and the button says
+  "Create song and upload". Making the mix optional in the first place was the AI's call, and a bad one.
+- **Independent review (separate AI agent) of PR #34 found real issues** that the GitHub review action
+  missed ("No issues found"): thrown Server Action errors froze the form on "Finishing…"; `ext in TYPES`
+  accepted `x.constructor` (prototype chain); upload access inferred from read access (breaks once share
+  links grant reads); retry looped on "already has a mix". All fixed.
+- **Server checks now have tests that bypass the browser:** Playwright intercepts and tampers with the
+  Server Action JSON (foreign song, prototype extension, 600 MB, string size, foreign key, size mismatch,
+  wrong content type at storage, retry without a duplicate song, lost finish response). Mutation-checked:
+  removing each of six server checks makes its test fail. Not independently testable yet: the
+  own-workspace check (RLS already hides foreign songs; meaningful once share links exist).
+- **The GitHub review action was blind:** its `allowedTools` contained only the inline-comment tool (no
+  `gh pr diff`/`Read`), with a depth-1 checkout. 4 turns, 12 s, $0.15 per "review". Fix in a separate PR.
+- **Fixed review bot, verified:** canary PR #36 with two planted bugs (open redirect, `using (true)` RLS
+  policy disguised as an index migration). The fixed reviewer flagged both, correctly. Lesson: the run's
+  cost and turn count weren't a reliable "is it reviewing?" signal (the working run was cheaper than the
+  blind ones); planting known bugs was.
+- **Second gotcha:** the reviewer skips PRs it has already commented on. #34's stale blind "No issues
+  found" made re-runs exit in 2–3 turns. Deleting it, then close and reopen, gave a real 6-turn review
+  (no issues on the fixed code). Inferred from run behavior; I couldn't read the plugin's rule. In AGENTS.md.

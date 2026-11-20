@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace";
 import { LocalDate } from "@/components/local-date";
+import { formatBytes } from "@/lib/upload-rules";
 
 export default async function SongsPage() {
   // Pages check auth themselves; the layout's check doesn't protect them.
@@ -9,7 +10,7 @@ export default async function SongsPage() {
   const supabase = await createClient();
   const { data: songs, error } = await supabase
     .from("songs")
-    .select("id, title, client_name, created_at")
+    .select("id, title, client_name, created_at, mix_versions (original_filename, size_bytes)")
     .eq("workspace_id", workspace.id)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -32,6 +33,11 @@ export default async function SongsPage() {
               <div className="min-w-0">
                 <p className="truncate font-medium">{song.title}</p>
                 {song.client_name && <p className="truncate text-sm text-zinc-500">{song.client_name}</p>}
+                <p className="truncate text-xs text-zinc-400">
+                  {song.mix_versions[0]
+                    ? `${song.mix_versions[0].original_filename} · ${formatBytes(song.mix_versions[0].size_bytes)}`
+                    : "No mix yet"}
+                </p>
               </div>
               <span className="shrink-0 text-sm text-zinc-500">
                 <LocalDate iso={song.created_at} />

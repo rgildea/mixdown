@@ -18,7 +18,7 @@ Everything runs against a local Supabase stack. Email goes to Mailpit, not real 
 
 ```bash
 npm install
-npm run db:start          # local Supabase + Mailpit, applies migrations, seeds dev users
+npm run db:start          # local Supabase + Mailpit + RustFS (R2 stand-in), migrations, dev users
 cp apps/web/.env.example apps/web/.env.local   # local values are pre-filled
 npm run dev               # http://localhost:3000
 ```

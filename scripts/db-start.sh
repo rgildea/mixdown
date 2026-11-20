@@ -51,8 +51,18 @@ else
   start "$@"
 fi
 node scripts/dev-seed-users.mjs
+
+# Local S3-compatible storage standing in for R2 (issue #6). Data persists in a Docker volume.
+if ! docker ps --format '{{.Names}}' | grep -qx mixdown_rustfs; then
+  docker rm -f mixdown_rustfs >/dev/null 2>&1 || true
+  docker run -d --name mixdown_rustfs -p 127.0.0.1:55340:9000 \
+    -e RUSTFS_ACCESS_KEY=mixdown-dev -e RUSTFS_SECRET_KEY=mixdown-dev-secret \
+    -v mixdown_rustfs_data:/data rustfs/rustfs:1.0.6 >/dev/null
+fi
+node scripts/dev-storage.mjs
 echo
 echo "App env (apps/web/.env.local): NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321"
 echo "  NEXT_PUBLIC_SUPABASE_ANON_KEY=\$(npx supabase status -o json | jq -r .ANON_KEY)"
 echo "Mailpit (catches all email): http://127.0.0.1:55324"
+echo "Local storage (R2 stand-in): http://127.0.0.1:55340, bucket mixdown-local"
 if [[ "$EXCLUDE" != *studio* ]]; then echo "Studio (local dashboard): http://127.0.0.1:55323"; fi

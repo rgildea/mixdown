@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { signIn } from "./mailpit";
 
+/** Songs require a mix; a tiny MP3-named file is enough for list/isolation tests. */
+const attachMix = (page: import("@playwright/test").Page) =>
+  page.getByLabel("Mix").setInputFiles({ name: "mix.mp3", mimeType: "audio/mpeg", buffer: Buffer.alloc(1000, 1) });
+
 const DEV = "dev@example.test";
 const DEV2 = "dev2@example.test"; // a different workspace
 
@@ -11,7 +15,8 @@ test("create a song and see it at the top of the list", async ({ page }) => {
   await page.getByRole("link", { name: "New song" }).click();
   await page.getByLabel("Title").fill(title);
   await page.getByLabel(/Client/).fill("T.C.");
-  await page.getByRole("button", { name: "Create song" }).click();
+  await attachMix(page);
+  await page.getByRole("button", { name: "Create song and upload" }).click();
 
   await expect(page).toHaveURL("/songs");
   const first = page.getByRole("list", { name: "Songs" }).getByRole("listitem").first();
@@ -23,7 +28,8 @@ test("a whitespace-only title is rejected by the server", async ({ page }) => {
   await signIn(page, DEV);
   await page.goto("/songs/new");
   await page.getByLabel("Title").fill("   "); // passes the browser's `required` check
-  await page.getByRole("button", { name: "Create song" }).click();
+  await attachMix(page);
+  await page.getByRole("button", { name: "Create song and upload" }).click();
   await expect(page.getByText("Title must be 1–200 characters.")).toBeVisible();
   await expect(page).toHaveURL("/songs/new");
 });
@@ -33,7 +39,8 @@ test("another workspace can't see my songs", async ({ page, browser }) => {
   await signIn(page, DEV);
   await page.goto("/songs/new");
   await page.getByLabel("Title").fill(title);
-  await page.getByRole("button", { name: "Create song" }).click();
+  await attachMix(page);
+  await page.getByRole("button", { name: "Create song and upload" }).click();
   await expect(page.getByText(title)).toBeVisible();
 
   const other = await browser.newContext();

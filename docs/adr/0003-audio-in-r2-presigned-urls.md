@@ -1,7 +1,7 @@
 # 0003. Audio in Cloudflare R2 via presigned URLs; ownership checked in Supabase
 
 - Status: Accepted
-- Date: 2026-11-19
+- Date: 2026-11-19 (updated 2026-11-20 after the #6 review)
 - Decided by: Ryan (reviewed; replaces an AI-drafted Supabase Storage + TUS design)
 
 ## Context
@@ -15,13 +15,16 @@ ADR 0002 puts audio in R2 (zero egress fees) and authorization in Supabase.
 Upload:
 1. Browser validates type (`audio/wav`, `audio/x-wav`, `audio/mpeg`) and size (≤ **500 MB**,
    one constant `MAX_UPLOAD_BYTES`), then a Server Action creates the `songs` row.
-2. Server Action `createUploadUrl(songId, filename, contentType, size)`: confirms the user via
-   `supabase.auth.getUser()`, re-checks type/size, loads the song through RLS (no row = not
-   the owner), and returns a **presigned PUT URL** (15 min) with `Content-Type` and
-   `Content-Length` signed in, so R2 rejects anything else.
+2. Server Action `createUploadUrl({ songId, filename, size })`: confirms the user, re-checks
+   type/size (type decided by file extension, stored as one canonical MIME type), loads the song
+   through RLS **and requires it to be in the user's own workspace** (read access alone isn't
+   enough once share links exist), and returns a **presigned PUT URL** (15 min) with
+   `Content-Type` and `Content-Length` signed in (`signableHeaders`), so storage rejects anything else.
 3. Browser uploads with a **single PUT via XHR** (for `upload.onprogress`), and shows a progress bar.
-4. Server Action `finishUpload(songId, key)`: `HeadObject` on R2 to confirm the object exists
-   and the size matches, then inserts `mix_versions` (version 1). The DB never points at a missing file.
+4. Server Action `finishUpload({ songId, key, filename, size })`: accepts only a key this song could
+   have been issued, `HeadObject` to confirm the object exists with the expected size and type, then
+   inserts `mix_versions` (version 1). The DB never points at a missing file. A duplicate insert
+   (a retried finish) counts as success.
 
 Playback: the song page (Server Component) checks ownership via RLS and generates a **presigned
 GET URL (1 h)** on each request. `<audio>` streams it with range requests.
@@ -29,7 +32,7 @@ GET URL (1 h)** on each request. `<audio>` streams it with range requests.
 Details:
 - Bucket: private, no public dev URL. CORS allows `PUT`/`GET`/`HEAD` from our origins
   (localhost, production, Vercel previews). CORS is not the security layer; signatures are.
-- Object key: `{owner_id}/{song_id}/v{n}-{uuid}.{ext}`. Original filename lives only in the DB.
+- Object key: `{workspace_id}/{song_id}/v{n}-{uuid}.{ext}`. Original filename lives only in the DB.
 - Library: `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`, endpoint
   `https://<account_id>.r2.cloudflarestorage.com`.
 - Credentials: an R2 API token scoped to this bucket (Object Read & Write). Env vars

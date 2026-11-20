@@ -14,10 +14,11 @@ export async function messagesTo(email: string): Promise<Summary[]> {
 
 /**
  * Waits for an email to `email` that isn't in `seenIds` and returns its sign-in link.
+ * Waits up to 20s: the first email after a fresh stack start can be slow.
  * Uses message IDs, not timestamps: on macOS, Docker's VM clock can drift from the host's
  * (e.g. after sleep), so comparing Mailpit's `Created` with the test's clock is unreliable.
  */
-async function newLink(email: string, seenIds: Set<string>, timeoutMs = 10_000): Promise<string> {
+async function newLink(email: string, seenIds: Set<string>, timeoutMs = 20_000): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const fresh = (await messagesTo(email)).find((m) => !seenIds.has(m.ID));
