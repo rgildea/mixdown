@@ -109,3 +109,7 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 - **Verified:** progress bar on a throttled 200 MB upload (screenshot at 43%); canary build shows no R2
   secret or S3 code in client chunks. The first grep "found" hits, but they were React's `-canary` version string.
 - **AI got wrong:** used refs for render-visible state; the React lint rules flagged it, so it switched to state.
+- **UX fix from Ryan's local test:** the bare file input was easy to miss (two songs created without a mix).
+  Now a bordered picker with a real button and a "Ready to upload: name (size)" confirmation, the mix is
+  required (matches the spec flow; "Skip for now" remains after a failed upload), and the button says
+  "Create song and upload". Making the mix optional in the first place was the AI's call, and a bad one.

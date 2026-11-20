@@ -25,8 +25,8 @@ test("upload a WAV: progress, then the song lists its mix", async ({ page }) => 
   const title = `Upload ${Date.now()}`;
   await signIn(page, DEV);
   await startNewSong(page, title);
-  await page.getByLabel(/^Mix/).setInputFiles({ name: "final mix.wav", mimeType: "audio/wav", buffer: wav(10) });
-  await page.getByRole("button", { name: "Create song" }).click();
+  await page.getByLabel("Mix").setInputFiles({ name: "final mix.wav", mimeType: "audio/wav", buffer: wav(10) });
+  await page.getByRole("button", { name: "Create song and upload" }).click();
 
   await expect(page).toHaveURL("/songs", { timeout: 30_000 });
   const row = page.getByRole("listitem").filter({ hasText: title });
@@ -39,19 +39,21 @@ test("an MP3 uploads too", async ({ page }) => {
   const title = `MP3 ${Date.now()}`;
   await signIn(page, DEV);
   await startNewSong(page, title);
-  await page.getByLabel(/^Mix/).setInputFiles({ name: "rough.mp3", mimeType: "audio/mpeg", buffer: Buffer.alloc(300_000, 1) });
-  await page.getByRole("button", { name: "Create song" }).click();
+  await page.getByLabel("Mix").setInputFiles({ name: "rough.mp3", mimeType: "audio/mpeg", buffer: Buffer.alloc(300_000, 1) });
+  await page.getByRole("button", { name: "Create song and upload" }).click();
   await expect(page).toHaveURL("/songs", { timeout: 30_000 });
   await expect(page.getByRole("listitem").filter({ hasText: title })).toContainText("rough.mp3");
 });
 
-test("a song can be created without a mix", async ({ page }) => {
-  const title = `No file ${Date.now()}`;
+test("a mix is required, and the picked file is confirmed", async ({ page }) => {
   await signIn(page, DEV);
-  await startNewSong(page, title);
-  await page.getByRole("button", { name: "Create song" }).click();
-  await expect(page).toHaveURL("/songs");
-  await expect(page.getByRole("listitem").filter({ hasText: title })).toContainText("No mix yet");
+  await startNewSong(page, `Needs file ${Date.now()}`);
+  await page.getByRole("button", { name: "Create song and upload" }).click();
+  await expect(page).toHaveURL("/songs/new"); // browser blocks submit: file input is required
+  expect(await page.getByLabel("Mix").evaluate((el: HTMLInputElement) => el.validity.valueMissing)).toBe(true);
+
+  await page.getByLabel("Mix").setInputFiles({ name: "take 3.wav", mimeType: "audio/wav", buffer: wav(1) });
+  await expect(page.getByText("Ready to upload: take 3.wav (172 KB)")).toBeVisible();
 });
 
 test("files over 500 MB are rejected before uploading", async ({ page }, testInfo) => {
@@ -64,17 +66,17 @@ test("files over 500 MB are rejected before uploading", async ({ page }, testInf
 
   await signIn(page, DEV);
   await startNewSong(page, `Too big ${Date.now()}`);
-  await page.getByLabel(/^Mix/).setInputFiles(big);
+  await page.getByLabel("Mix").setInputFiles(big);
   await expect(page.getByText("That file is 600 MB. The limit is 500 MB.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Create song" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Create song and upload" })).toBeDisabled();
 });
 
 test("non-audio files are rejected before uploading", async ({ page }) => {
   await signIn(page, DEV);
   await startNewSong(page, `Wrong type ${Date.now()}`);
   for (const name of ["notes.txt", "mix.aiff"]) {
-    await page.getByLabel(/^Mix/).setInputFiles({ name, mimeType: "application/octet-stream", buffer: Buffer.from("x") });
+    await page.getByLabel("Mix").setInputFiles({ name, mimeType: "application/octet-stream", buffer: Buffer.from("x") });
     await expect(page.getByText("Only WAV or MP3 files can be uploaded.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Create song" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Create song and upload" })).toBeDisabled();
   }
 });

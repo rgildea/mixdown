@@ -32,6 +32,7 @@ export function NewSongForm() {
   // Kept after the song is created so "Try again" re-uploads instead of creating a second song.
   const [songId, setSongId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [picked, setPicked] = useState<{ name: string; size: number } | null>(null);
 
   const busy = phase.name === "saving" || phase.name === "uploading" || phase.name === "finishing";
 
@@ -66,12 +67,11 @@ export function NewSongForm() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const picked = form.get("file");
-    const f = picked instanceof File && picked.size > 0 ? picked : null;
-    if (f) {
-      const check = checkUpload(f);
-      if (!check.ok) return setFileError(check.error);
-    }
+    const input = form.get("file");
+    const f = input instanceof File && input.size > 0 ? input : null;
+    if (!f) return setFileError("Choose a WAV or MP3 to upload.");
+    const check = checkUpload(f);
+    if (!check.ok) return setFileError(check.error);
     setFile(f);
 
     setPhase({ name: "saving" });
@@ -82,7 +82,6 @@ export function NewSongForm() {
     if (!created.ok) return setPhase({ name: "error", message: created.error, canRetryUpload: false });
     setSongId(created.songId);
 
-    if (!f) return router.push("/songs");
     await upload(created.songId, f);
   }
 
@@ -103,20 +102,32 @@ export function NewSongForm() {
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="file" className="text-sm font-medium">
-            Mix <span className="font-normal text-zinc-500">(WAV or MP3, up to 500 MB)</span>
+            Mix
           </label>
-          <input
-            id="file"
-            name="file"
-            type="file"
-            accept={ACCEPT_ATTR}
-            onChange={(e) => {
-              const f = e.currentTarget.files?.[0];
-              const check = f ? checkUpload(f) : null;
-              setFileError(check && !check.ok ? check.error : null);
-            }}
-            className="text-sm"
-          />
+          <div
+            className={`flex flex-col gap-2 rounded-lg border-2 border-dashed p-4 ${
+              fileError ? "border-red-300 bg-red-50" : picked ? "border-zinc-400 bg-zinc-50" : "border-zinc-300"
+            }`}
+          >
+            <input
+              id="file"
+              name="file"
+              type="file"
+              required
+              accept={ACCEPT_ATTR}
+              aria-describedby="file-hint"
+              onChange={(e) => {
+                const f = e.currentTarget.files?.[0] ?? null;
+                const check = f ? checkUpload(f) : null;
+                setFileError(check && !check.ok ? check.error : null);
+                setPicked(f && check?.ok ? { name: f.name, size: f.size } : null);
+              }}
+              className="text-sm text-zinc-600 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-700"
+            />
+            <p id="file-hint" className="text-xs text-zinc-500">
+              {picked ? `Ready to upload: ${picked.name} (${formatBytes(picked.size)})` : "WAV or MP3, up to 500 MB"}
+            </p>
+          </div>
           {fileError && (
             <p className="text-sm text-red-700" role="alert">
               {fileError}
@@ -169,7 +180,7 @@ export function NewSongForm() {
           disabled={busy || fileError !== null}
           className="w-fit rounded-md bg-zinc-900 px-4 py-2 text-white disabled:opacity-50"
         >
-          {phase.name === "saving" ? "Creating…" : "Create song"}
+          {phase.name === "saving" ? "Creating…" : "Create song and upload"}
         </button>
       )}
     </form>
