@@ -9,7 +9,8 @@ and approve the final mix.
 > and [open issues](../../issues?q=is%3Aopen).
 
 ## What works today
-- **Invite-only sign-in** with magic links (no passwords; links work across devices).
+- **Invite-only sign-in** with magic links (no passwords; links work across devices). Invite-only is
+  enforced by a database trigger and an allowlist, so it fails closed on any new environment.
 - **Studios (workspaces)** own the data; Postgres row-level security keeps each studio's songs private.
 - **Uploads up to 500 MB** (WAV/MP3) go **straight from the browser to Cloudflare R2** with a progress
   bar; the server only signs and verifies (it never handles the audio).

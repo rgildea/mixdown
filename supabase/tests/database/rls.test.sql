@@ -5,6 +5,8 @@ create extension if not exists pgtap with schema extensions;
 select plan(19);
 
 -- ---------- Fixtures: two engineers and one anonymous (share-link) user ----------
+-- Invite-only (ADR 0004): engineers must be invited before their accounts can exist.
+select public.invite_user('alice@example.test'), public.invite_user('bob@example.test');
 insert into auth.users (id, email, aud, role, is_anonymous) values
   ('11111111-1111-1111-1111-111111111111', 'alice@example.test', 'authenticated', 'authenticated', false),
   ('22222222-2222-2222-2222-222222222222', 'bob@example.test',   'authenticated', 'authenticated', false),

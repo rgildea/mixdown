@@ -73,3 +73,14 @@ export async function adminCountSongs(title: string) {
   ).json()) as unknown[];
   return rows.length;
 }
+
+/** Adds an email to the invite allowlist (service-role RPC; test setup only). */
+export async function adminInvite(email: string) {
+  const { url, key } = localAdmin();
+  const res = await fetch(`${url}/rest/v1/rpc/invite_user`, {
+    method: "POST",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error(`invite failed: ${res.status} ${await res.text()}`);
+}

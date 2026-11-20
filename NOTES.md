@@ -199,3 +199,16 @@ lined up (#2 closed).
 - From the backfill: 4 of 7 original ADRs were substantially changed by Ryan's review (stack storage,
   upload design, ownership, client access). Two more were amended after reviews or surprises during
   implementation (0003 after the #34 review; 0006 twice).
+
+## 2026-11-20: Week 2 S1 (#42), invite allowlist in the database (Claude Code)
+- **Why:** the Week 2 spike found that Supabase's global "signups off" also blocks anonymous sign-ins,
+  which share links need. Two more probes: an auth hook works but fails open if it's not configured on a new
+  project, and it misses anonymous users adding an email. Ryan chose the DB allowlist (fails closed).
+- **Built:** `private.invites`, `guard_auth_users` (before insert/update on `auth.users`),
+  service-role-only `invite_user()`; signups and anonymous sign-ins on; the login form allows first
+  sign-in for invited emails; the seed script invites before creating. ADR 0004 amended + changelog
+  rows on 0004 and 0005.
+- **Tests:** 16 new pgTAP + 3 E2E. Mutation-checked: dropping the guard, opening `invite_user` to
+  clients, and removing the UPDATE guard each fail tests. Dropping the guard makes the uninvited E2E
+  test receive a real sign-in email, which is the regression alarm for the most important security property.
+- **Gotcha recorded:** `db:reset` doesn't reload auth config; config changes need a stop + start.

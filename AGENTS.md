@@ -45,6 +45,11 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 - Develop and test against the LOCAL stack (ADR 0009), never the hosted projects. Dev users:
   `dev@example.test`, `dev2@example.test`; read their emails from Mailpit (http://127.0.0.1:55324,
   API at `/api/v1`). Supabase allows 1 email per user per second locally.
+- Invite-only is enforced by the DATABASE (`private.invites` + `guard_auth_users` trigger, ADR 0004),
+  not by Supabase's signup switch, which is ON (it must be, for anonymous share-link users). Never turn
+  that guard off or loosen it without an ADR. Local invite + create: `npm run db:users -- a@b.com`.
+- After pulling a change to `supabase/config.toml`, recreate the stack (`npx supabase stop && npm run
+  db:start`): `db:reset` does not reload auth settings.
 - Magic links use `token_hash` templates (`supabase/templates/`); `emailRedirectTo` must stay
   exactly `${origin}/auth/callback`. Template changes must also be pasted into the hosted dashboards.
 - In Playwright, `getByRole("alert")` also matches Next's route announcer; use text locators.

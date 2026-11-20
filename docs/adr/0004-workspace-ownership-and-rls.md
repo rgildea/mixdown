@@ -37,9 +37,15 @@ mix_versions      (id, song_id → songs, version_number, object_key, original_f
   role-based permissions go on the Later list. `role` exists now so no migration is needed later.
 - R2 keys are prefixed by workspace: `{workspace_id}/{song_id}/v{n}-{uuid}.{ext}`.
 - Indexes: `songs(workspace_id, created_at desc)`, `mix_versions(song_id)`, `workspace_members(user_id)`.
-- **Invite-only:** public signups disabled in Supabase Auth (and `enable_signup = false` in
-  `supabase/config.toml`); `signInWithOtp({ options: { shouldCreateUser: false } })`; users are
-  invited from the dashboard. Clients never get accounts (see ADR 0005).
+- **Invite-only, enforced in the database** (amended in #42): `private.invites` is an email allowlist.
+  A `before insert or update` trigger on `auth.users` (`private.guard_auth_users`) allows anonymous
+  users (share-link clients, ADR 0005), allows anyone else only if their email is invited, and lets an
+  anonymous user become a permanent account only with an invited email. Supabase's global signup
+  switch is therefore **on** (it also blocks anonymous sign-ins when off), and anonymous sign-ins are on.
+  This **fails closed**: any project running the migrations is invite-only whatever the dashboard says.
+- **Inviting someone = adding their email** with `public.invite_user(email)` (service role only;
+  `select public.invite_user('a@b.com')` in the hosted SQL editor, `npm run db:users -- a@b.com`
+  locally). They then sign in normally (`shouldCreateUser: true`); their account and workspace are created.
 - No service-role key in Week 1.
 
 ## Alternatives considered
@@ -47,10 +53,17 @@ mix_versions      (id, song_id → songs, version_number, object_key, original_f
   if a second engineer ever joins. Rejected: workspaces are the one data-model choice that's
   expensive to retrofit.
 - **Open signups:** each user would be isolated by RLS anyway, but costs and abuse are unbounded.
+- **Global signup switch off** (original decision): simple, but blocks anonymous sign-ins (spike, #9).
+- **`before_user_created` auth hook:** works, but it's configured in the dashboard, so a new project
+  without it **fails open**. It also doesn't cover anonymous users adding an email (an update).
 - **Inline membership subqueries in every policy:** works, but repetitive and prone to RLS recursion.
 
 ## Consequences
 - Isolation test (spec §9) uses a second *invited* account, which gets its own workspace.
+- Hosted rollout order matters: apply the migration **before** switching signups/anonymous on.
+- Refused signups surface from GoTrue as a generic 500 ("Database error saving new user"); the login
+  form shows the same "check your email" message regardless, so nothing leaks.
+- Abuse of anonymous sign-ins (bots creating throwaway users) is rate-limited per IP; captcha is Later #23.
 - `created_by` records who uploaded or created what, for future team features and audit.
 - Every new table must have RLS and policies in the same migration that creates it.
 - `security definer` functions live in a non-exposed `private` schema with `search_path` set.
@@ -61,3 +74,4 @@ mix_versions      (id, song_id → songs, version_number, object_key, original_f
 | 2026-11-19 | Drafted by AI: per-user ownership (`songs.owner_id`), open magic-link signups. | Initial plan. |
 | 2026-11-19 | Reviewed: **workspaces own data**, users are members; **invite-only** signups (`52e185f`). | The ownership unit is costly to retrofit. Open signups would let strangers fill the R2 bucket. |
 | 2026-11-19 | Implemented in #5 with narrower privileges than drafted: select/insert-only policies, `anon` revoked, and the workspace trigger skips anonymous users (PR #32). | Least privilege until edit/delete exists; anonymous share-link users must not get workspaces. |
+| 2026-11-20 | **Invite-only moved from Supabase's global signup switch into the database:** `private.invites` allowlist + `guard_auth_users` trigger + service-role `invite_user()`; signups and anonymous sign-ins switched on; inviting = allowlisting, and invited people sign in normally (#42). | Week 2 spike: the global switch also blocks anonymous sign-ins (needed by ADR 0005). Ryan chose the DB allowlist over an auth hook because it fails closed. |
