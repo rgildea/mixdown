@@ -40,7 +40,7 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 ## Weekly check-ins
 <!-- Sunday: What shipped (link)? What did I cut? What slowed me down? Next week's one goal? -->
 
-### Week 1 check-in (Foundation): DRAFT, edit before merging
+### Week 1 check-in (Foundation), 2026-11-20
 **1. What shipped?** https://mixdown-three.vercel.app/
 - Invite-only magic-link sign-in. Links work across devices. Custom email from `mail.mixdown.audio`.
 - Workspaces own the data; Postgres RLS isolates studios (19 pgTAP tests).
@@ -73,7 +73,8 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 - AI mistakes I had to catch: making the mix optional (I created songs without uploads), claiming "lint
   clean" with a warning present, a flaky clock-based test helper, and `Closes #7` written in the commit
   message ahead of the live checks.
-- **[Ryan: hours actually spent vs the 8–10 planned; anything else that dragged]**
+- **Time:** about 10 hours, at the top of the 8–10 h budget, but done in **2 days instead of a week**. The
+  infrastructure surprises above ate a good share of it; the feature work itself went fast with AI tools.
 
 **4. The single goal for Week 2:** a client opens a share link (no account), sees a waveform, and leaves
 comments pinned to timestamps, which I see on my song page. That's the full v1 loop (#9). The first task
