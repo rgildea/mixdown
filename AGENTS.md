@@ -23,7 +23,8 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 
 ## Commands (run from repo root)
 - `npm install`: install all workspaces
-- `npm run db:start`: local Supabase + Mailpit (starts dockerd in cloud sessions), seeds dev users
+- `npm run db:start`: local Supabase + Mailpit + RustFS (starts dockerd in cloud sessions), applies any
+  pending migrations, seeds dev users
 - `npm run dev`: app on http://localhost:3000 against local Supabase (`apps/web/.env.local`)
 - `npm run test:e2e`: Playwright tests (local stack must be running)
 - `npm run db:test`: pgTAP RLS tests. Every new table/policy gets tests here, and confirm they FAIL

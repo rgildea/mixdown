@@ -50,6 +50,9 @@ else
   # Locally, a failure is a real error: stop and show it rather than loop.
   start "$@"
 fi
+# A restarted stack keeps its database but does NOT apply migrations pulled since; apply them before
+# seeding (the seed script relies on functions those migrations create, e.g. invite_user).
+npx supabase migration up
 node scripts/dev-seed-users.mjs
 
 # Local S3-compatible storage standing in for R2 (issue #6). Data persists in a Docker volume.

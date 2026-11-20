@@ -212,3 +212,6 @@ lined up (#2 closed).
   clients, and removing the UPDATE guard each fail tests. Dropping the guard makes the uninvited E2E
   test receive a real sign-in email, which is the regression alarm for the most important security property.
 - **Gotcha recorded:** `db:reset` doesn't reload auth config; config changes need a stop + start.
+- **AI got wrong:** told Ryan to stop + start the stack after pulling. A restarted stack keeps its DB and
+  doesn't apply new migrations, so the seed script's `invite_user()` call failed. `db:start` now runs
+  `supabase migration up` before seeding; reproduced the failing case and verified the fix.
