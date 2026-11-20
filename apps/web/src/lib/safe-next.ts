@@ -1,7 +1,4 @@
-/** Only allow same-site relative paths as post-login destinations (prevents open redirects). */
+/** Post-login destination: a path on this site, or the fallback. */
 export function safeNext(next: string | null | undefined, fallback = "/songs"): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
-    return fallback;
-  }
-  return next;
+  return next?.startsWith("/") ? next : fallback;
 }
