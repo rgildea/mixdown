@@ -61,3 +61,10 @@ The full suite and CI stay in Week 6.
   `scripts/db-start.sh` starts `dockerd` and switches registries automatically.
 - Email templates exist in two places (repo for local, dashboard for hosted). Keep them in sync.
 - Local and hosted rate limits differ; E2E helpers space out requests (1 email/user/second locally).
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| 2026-11-19 | Created: local Supabase + Mailpit by default, `token_hash` magic links, custom SMTP on hosted (PR #30). | Hit Supabase's built-in email limit (~2/hour) while testing on hosted dev. |
+| 2026-11-19 | Local ports moved from 543xx to 553xx (PR #30). | CleanMyMac listens on 54321 on macOS. |
+| 2026-11-19 | Local audio storage decided: **RustFS** (PR #34). | MinIO no longer publishes free Docker images. Real R2 locally would need secrets on every machine and block cloud/CI tests. |

@@ -42,3 +42,9 @@ permission system that grows into that, not two.
 - **Week 2 first task (15 min):** confirm anonymous sign-ins work with `enable_signup = false`
   (separate `enable_anonymous_sign_ins` setting).
 - Project/album-level links (one link for an EP) are on the Later list; additive (`projects` table).
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| 2026-11-19 | Drafted by AI as *Proposed*: share token + `security definer` functions per client capability. | Left for Ryan to decide. |
+| 2026-11-19 | Reviewed and accepted as a **hybrid**: share link → anonymous session → `song_access` grant → plain RLS (`52e185f`). | Per-capability functions would become a second permission system once clients get more features or accounts. |

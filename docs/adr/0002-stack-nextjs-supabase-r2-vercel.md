@@ -42,3 +42,9 @@ is about 0.85 GB of egress), so storage egress pricing matters more than usual.
 - Next.js 16 conventions differ from older AI training data (e.g. `middleware.ts` became `proxy.ts`).
 - Budget from Week 4: Vercel Pro (~$20/mo) + Supabase Pro (~$25/mo; avoids idle pausing) + R2
   (likely within free tier). Check current pricing at the time.
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| 2026-11-19 | Drafted by AI: Next.js + Supabase (Auth, Postgres **and Storage**) + Vercel, decided without discussion in an earlier chat. | Initial plan. |
+| 2026-11-19 | Reviewed: **audio moved to Cloudflare R2**; Vercel Hobby until Week 4, then Pro; no Vercel-only services (`52e185f`). | Audio streaming is egress-heavy and R2 has zero egress fees; Hobby is non-commercial. Netlify was considered and rejected. |

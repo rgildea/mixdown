@@ -1,7 +1,7 @@
 # 0003. Audio in Cloudflare R2 via presigned URLs; ownership checked in Supabase
 
 - Status: Accepted
-- Date: 2026-11-19 (updated 2026-11-20 after the #6 review)
+- Date: 2026-11-19
 - Decided by: Ryan (reviewed; replaces an AI-drafted Supabase Storage + TUS design)
 
 ## Context
@@ -53,3 +53,10 @@ Details:
 - A dropped connection restarts the upload from zero (single PUT).
 - Week 2 client share pages reuse the same presigned-GET path after validating a share token.
 - Later list: a compressed streaming copy (AAC/MP3) for faster client playback; stored waveform peaks (Week 2 ADR).
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| 2026-11-19 | Drafted by AI: Supabase Storage + TUS resumable uploads, 50 MB cap. | Followed the original stack. |
+| 2026-11-19 | Rewritten for R2: presigned PUT/GET, server checks ownership, single PUT, 500 MB limit (`52e185f`). | Follows the R2 decision in 0002. Multipart deferred until real uploads fail. |
+| 2026-11-19 | Amended after the PR #34 review: type decided by extension; **Content-Type signed** (`signableHeaders`); upload requires the song in the user's *own* workspace; a duplicate finish counts as success; key prefix `{workspace_id}` (PR #34). | A probe showed the SDK signs only Content-Length by default. The independent review found that read access was being treated as upload permission. |

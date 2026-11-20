@@ -34,3 +34,8 @@ conventional way: `await getCurrentUser()` / data at the top of the page or layo
 - **Revisit if** Next.js makes Cache Components mandatory, or a page has a large static portion.
   Re-enabling is mechanical: the build names each route needing a boundary (see
   `node_modules/next/dist/docs/01-app/02-guides/migrating-to-cache-components.md`).
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| 2026-11-19 | Created: Cache Components turned off (PR #30). | Nearly every page is per-request; forced Suspense boundaries cost more than the static shell gained. |

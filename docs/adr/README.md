@@ -4,6 +4,13 @@ One short file per decision that would be expensive to reverse or that a reviewe
 would ask "why?" about. Format: Context → Decision → Consequences. Status is
 `Proposed`, `Accepted`, or `Superseded by NNNN`. Copy `template.md` to add one.
 
+**Every ADR ends with a `## Changelog`.** When a decision is amended, update the ADR body to the
+current truth **and** add a changelog row: date, what changed, why (the trigger: a review finding,
+a production surprise, new information), and the PR/commit. Never rewrite history in the body
+without a row. The point is to look back later and see how solid each decision was: what held,
+what changed, and what we learned. A decision that changes completely gets a new ADR that
+supersedes the old one, which keeps its changelog.
+
 | # | Decision | Status |
 |---|---|---|
 | [0001](0001-monorepo-with-docs-and-agent-memory.md) | Monorepo with code, docs and agent memory | Accepted (reviewed) |
