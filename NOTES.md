@@ -40,6 +40,47 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 ## Weekly check-ins
 <!-- Sunday: What shipped (link)? What did I cut? What slowed me down? Next week's one goal? -->
 
+### Week 1 check-in (Foundation): DRAFT, edit before merging
+**1. What shipped?** **[Ryan: production URL]**
+- Invite-only magic-link sign-in. Links work across devices. Custom email from `mail.mixdown.audio`.
+- Workspaces own the data; Postgres RLS isolates studios (19 pgTAP tests).
+- Create a song and upload a WAV/MP3 up to 500 MB **straight to Cloudflare R2** with a progress bar. The
+  server only signs and verifies.
+- Song page with playback via a fresh 1-hour signed URL; private bucket.
+- 30 Playwright tests, including 9 that tamper with Server Action requests to prove the server enforces
+  the rules. Local-first dev (Supabase + Mailpit + RustFS in Docker) that also runs in AI cloud sessions.
+- Every box in spec §2 and §9 checked on production **[Ryan: signed-URL expiry result]**.
+- 7 feature PRs merged (#30, #32, #34, #35, #37, #40, plus the CI workflow #31).
+
+**2. What did I cut or move to Later?**
+- Moved to Later (17 open `later` issues): multipart/resumable uploads, compressed streaming copies,
+  orphaned-object cleanup, edit/delete songs, a mix-file error message (#38), a layout error page (#39),
+  and more.
+- Changed rather than cut: my review overturned 4 of the 7 AI-drafted decisions (R2 instead of Supabase
+  Storage, workspaces, invite-only, the share-link model), and Cache Components was turned off (ADR 0008).
+- **Pulled forward, not cut:** the local Docker stack and E2E tests were planned for Week 6 and landed
+  in Week 1 (ADR 0009), because testing against hosted email limits wasn't workable. That was extra
+  scope, but it paid for itself immediately.
+
+**3. What slowed me down?**
+- Infrastructure surprises, each about an hour: Supabase's built-in email cap (~2/hour), CleanMyMac
+  holding port 54321, Supabase CLI v3 defaulting to the local stack (`--remote`), MinIO no longer
+  publishing Docker images, and the 1Password SSH agent not running after a `brew upgrade`.
+- AI-tool issues: the GitHub review bot was **blind** (it couldn't read the PR) and later skipped PRs
+  it had already commented on. Its "No issues found" was meaningless until fixed and canary-tested. An
+  independent review agent found real bugs on both #34 and #37 that the bot missed.
+- AI mistakes I had to catch: making the mix optional (I created songs without uploads), claiming "lint
+  clean" with a warning present, a flaky clock-based test helper, and `Closes #7` written in the commit
+  message ahead of the live checks.
+- **[Ryan: hours actually spent vs the 8–10 planned; anything else that dragged]**
+
+**4. The single goal for Week 2:** a client opens a share link (no account), sees a waveform, and leaves
+comments pinned to timestamps, which I see on my song page. That's the full v1 loop (#9). The first task
+is the 15-minute check that anonymous sign-ins work with signups disabled.
+
+**Also for Week 2:** [ ] Line up the Week 4 client project (#2), if not done. [ ] The 1-hour old-repo
+lessons review (#3).
+
 ## 2026-11-19: Issue #4, magic-link auth (Claude Code)
 - **Asked:** Build #4: invite-only magic-link login, callback, sign-out, protected `/songs`.
 - **Built:** `src/proxy.ts` + `lib/supabase/proxy.ts` (session refresh via `getClaims()`, optimistic
