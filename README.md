@@ -25,6 +25,12 @@ npm run dev               # http://localhost:3000
 
 Sign in as `dev@example.test`, then click the link in Mailpit at http://127.0.0.1:55324.
 
+**Studio** (local Supabase dashboard) is at http://127.0.0.1:55323: browse tables, rows, RLS policies
+(Authentication → Policies) and run SQL. It connects as an admin, so it **bypasses RLS**: use
+`npm run db:test` or the app to check what a user can see. Schema changes still go through migrations
+(ADR 0006). If you prototype a change in Studio, capture it with `npx supabase db diff -f <name>`
+and then `npm run db:reset` to prove the migration rebuilds it.
+
 | Command | What |
 |---|---|
 | `npm run db:reset` | Rebuild the local DB from migrations and re-seed dev users |

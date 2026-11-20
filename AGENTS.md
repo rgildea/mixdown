@@ -29,6 +29,8 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
   when the policy is loosened (a test that never failed proves nothing)
 - `npm run db:types`: regenerate DB types after each migration (commit the result)
 - `npm run db:reset`: rebuild local DB from migrations + re-seed
+- Studio (local dashboard): http://127.0.0.1:55323 on the Mac. Off in cloud sessions unless
+  `MIXDOWN_STUDIO=1`. It bypasses RLS, so never use it as evidence of what a user can see.
 - `npm run build` / `npm run lint` / `npm run typecheck`
 - `npx supabase migration new <name>`: new SQL migration
 - `npx supabase db push`: apply migrations to the linked hosted project
