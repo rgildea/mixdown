@@ -30,13 +30,15 @@ export async function sendMagicLink(_prev: LoginState, formData: FormData): Prom
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      shouldCreateUser: false, // invite-only (ADR 0004)
+      // Never create accounts here: accounts are created when someone is invited (npm run invite),
+      // so there's no invited-but-unregistered window to claim (ADR 0004, PR #50 review).
+      shouldCreateUser: false,
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 
-  // Uninvited emails get an error from Supabase. Show the same message either way so the
-  // form doesn't reveal who has an account. Rate limits are the exception worth surfacing.
+  // Unknown emails get an error from Supabase. Show the same message either way so the form doesn't
+  // reveal who has an account. Rate limits are the exception worth surfacing.
   if (error && error.status === 429) {
     return { status: "error", message: "Too many attempts. Wait a minute and try again.", email };
   }

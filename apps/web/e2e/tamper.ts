@@ -27,7 +27,7 @@ export async function tamperAction(page: Page, matches: (a: Args) => boolean, mu
 export const isCreateUploadUrl = (a: Args) => "filename" in a && !("key" in a);
 export const isFinishUpload = (a: Args) => "key" in a;
 
-let admin: { url: string; key: string } | undefined;
+let admin: { url: string; key: string; anon: string } | undefined;
 function localAdmin() {
   if (admin) return admin;
   const status = JSON.parse(
@@ -38,7 +38,7 @@ function localAdmin() {
     }),
   );
   if (!/^http:\/\/(127\.0\.0\.1|localhost):/.test(status.API_URL)) throw new Error("not local");
-  return (admin = { url: status.API_URL, key: status.SERVICE_ROLE_KEY });
+  return (admin = { url: status.API_URL, key: status.SERVICE_ROLE_KEY, anon: status.ANON_KEY });
 }
 
 /** Creates a song in `email`'s workspace with admin rights (test setup only). Returns ids. */
@@ -72,4 +72,43 @@ export async function adminCountSongs(title: string) {
     })
   ).json()) as unknown[];
   return rows.length;
+}
+
+/** Local auth API base URL and the PUBLIC anon key: what any attacker has. */
+export function publicAuth() {
+  const { url, anon } = localAdmin();
+  return { auth: `${url}/auth/v1`, anon };
+}
+
+/** How Ryan invites (scripts/invite.mjs): allowlist AND create the account in one step. */
+export async function adminInviteAndCreate(email: string) {
+  await adminInvite(email);
+  const { url, key } = localAdmin();
+  const res = await fetch(`${url}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({ email, email_confirm: true }),
+  });
+  if (!res.ok) throw new Error(`create failed: ${res.status} ${await res.text()}`);
+}
+
+/** Whether any account (anonymous or not) exists with this email. */
+export async function adminUserExists(email: string) {
+  const { url, key } = localAdmin();
+  const res = await fetch(`${url}/auth/v1/admin/users?per_page=1000`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  const { users } = (await res.json()) as { users: { email?: string }[] };
+  return users.some((u) => u.email?.toLowerCase() === email.toLowerCase());
+}
+
+/** Adds an email to the invite allowlist only (service-role RPC; test setup only). */
+export async function adminInvite(email: string) {
+  const { url, key } = localAdmin();
+  const res = await fetch(`${url}/rest/v1/rpc/invite_user`, {
+    method: "POST",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error(`invite failed: ${res.status} ${await res.text()}`);
 }

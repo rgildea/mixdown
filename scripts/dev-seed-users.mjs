@@ -1,5 +1,6 @@
 // Creates the dev users in the LOCAL Supabase stack. Refuses to run against anything else.
-// Signups are disabled (ADR 0004), so users must be created with the admin API.
+// Invite-only is enforced by the database (ADR 0004): an email must be on the invite list before an
+// account can exist, so each user is invited (service-role RPC) and then created (admin API).
 // Extra users: `npm run db:users -- someone@example.test other@example.test`
 import { execFileSync } from "node:child_process";
 
@@ -22,7 +23,17 @@ export function localSupabase() {
   return { url, serviceKey: status.SERVICE_ROLE_KEY, anonKey: status.ANON_KEY };
 }
 
+export async function inviteEmail({ url, serviceKey }, email) {
+  const res = await fetch(`${url}/rest/v1/rpc/invite_user`, {
+    method: "POST",
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "content-type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error(`Inviting ${email} failed: ${res.status} ${await res.text()}`);
+}
+
 export async function ensureUser({ url, serviceKey }, email) {
+  await inviteEmail({ url, serviceKey }, email);
   const res = await fetch(`${url}/auth/v1/admin/users`, {
     method: "POST",
     headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "content-type": "application/json" },

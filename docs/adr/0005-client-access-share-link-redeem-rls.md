@@ -39,8 +39,8 @@ permission system that grows into that, not two.
   limiting on anonymous sign-in before any public launch.
 - Opening the link on a second device creates a second anonymous user. Acceptable; name is re-entered.
 - Revoking a link revokes access for everyone who redeemed it (`share_link_id` on the grant).
-- **Week 2 first task (15 min):** confirm anonymous sign-ins work with `enable_signup = false`
-  (separate `enable_anonymous_sign_ins` setting).
+- Anonymous sign-ins require Supabase's global signups **on**; invite-only is enforced in the database
+  instead (ADR 0004, amended in #42). Anonymous users cannot upgrade to permanent accounts unless invited.
 - Project/album-level links (one link for an EP) are on the Later list; additive (`projects` table).
 
 ## Changelog
@@ -48,3 +48,4 @@ permission system that grows into that, not two.
 |---|---|---|
 | 2026-11-19 | Drafted by AI as *Proposed*: share token + `security definer` functions per client capability. | Left for Ryan to decide. |
 | 2026-11-19 | Reviewed and accepted as a **hybrid**: share link → anonymous session → `song_access` grant → plain RLS (`52e185f`). | Per-capability functions would become a second permission system once clients get more features or accounts. |
+| 2026-11-20 | Spike result recorded: anonymous sign-ins don't work with global signups off; resolved by moving invite-only into the DB (ADR 0004). Design otherwise unchanged (#42). | The 15-minute check this ADR asked for found the conflict before any share-link code was written. |

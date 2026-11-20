@@ -23,7 +23,8 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 
 ## Commands (run from repo root)
 - `npm install`: install all workspaces
-- `npm run db:start`: local Supabase + Mailpit (starts dockerd in cloud sessions), seeds dev users
+- `npm run db:start`: local Supabase + Mailpit + RustFS (starts dockerd in cloud sessions), applies any
+  pending migrations, seeds dev users
 - `npm run dev`: app on http://localhost:3000 against local Supabase (`apps/web/.env.local`)
 - `npm run test:e2e`: Playwright tests (local stack must be running)
 - `npm run db:test`: pgTAP RLS tests. Every new table/policy gets tests here, and confirm they FAIL
@@ -45,6 +46,16 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 - Develop and test against the LOCAL stack (ADR 0009), never the hosted projects. Dev users:
   `dev@example.test`, `dev2@example.test`; read their emails from Mailpit (http://127.0.0.1:55324,
   API at `/api/v1`). Supabase allows 1 email per user per second locally.
+- Invite-only is enforced by the DATABASE (`private.invites` + `guard_auth_users` trigger, ADR 0004),
+  not by Supabase's signup switch, which is ON (it must be, for anonymous share-link users). Never turn
+  that guard off or loosen it without an ADR. Invite = allowlist + create in one step:
+  `npm run invite -- a@b.com` (local) or `npm run invite -- --remote a@b.com` (hosted). Never leave an
+  email allowlisted without an account.
+- The UI is not a security boundary: anyone can call the Supabase Auth API with the public anon key
+  (password signup, OTP with create_user, PUT /user…). Test security rules against the raw API too
+  (see `apps/web/e2e/invites.spec.ts`).
+- After pulling a change to `supabase/config.toml`, recreate the stack (`npx supabase stop && npm run
+  db:start`): `db:reset` does not reload auth settings.
 - Magic links use `token_hash` templates (`supabase/templates/`); `emailRedirectTo` must stay
   exactly `${origin}/auth/callback`. Template changes must also be pasted into the hosted dashboards.
 - In Playwright, `getByRole("alert")` also matches Next's route announcer; use text locators.
