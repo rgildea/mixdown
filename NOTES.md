@@ -78,8 +78,8 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 comments pinned to timestamps, which I see on my song page. That's the full v1 loop (#9). The first task
 is the 15-minute check that anonymous sign-ins work with signups disabled.
 
-**Also for Week 2:** [ ] Line up the Week 4 client project (#2), if not done. [ ] The 1-hour old-repo
-lessons review (#3).
+**Also for Week 2:** the 1-hour old-repo lessons review (#3), still open. The Week 4 client project is
+lined up (#2 closed).
 
 ## 2026-11-19: Issue #4, magic-link auth (Claude Code)
 - **Asked:** Build #4: invite-only magic-link login, callback, sign-out, protected `/songs`.
