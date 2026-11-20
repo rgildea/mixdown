@@ -54,3 +54,10 @@ mix_versions      (id, song_id → songs, version_number, object_key, original_f
 - `created_by` records who uploaded or created what, for future team features and audit.
 - Every new table must have RLS and policies in the same migration that creates it.
 - `security definer` functions live in a non-exposed `private` schema with `search_path` set.
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| 2026-11-19 | Drafted by AI: per-user ownership (`songs.owner_id`), open magic-link signups. | Initial plan. |
+| 2026-11-19 | Reviewed: **workspaces own data**, users are members; **invite-only** signups (`52e185f`). | The ownership unit is costly to retrofit. Open signups would let strangers fill the R2 bucket. |
+| 2026-11-19 | Implemented in #5 with narrower privileges than drafted: select/insert-only policies, `anon` revoked, and the workspace trigger skips anonymous users (PR #32). | Least privilege until edit/delete exists; anonymous share-link users must not get workspaces. |

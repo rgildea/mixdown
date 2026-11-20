@@ -149,3 +149,10 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
   fixed. Conclusion: the bot catches blatant bugs; it doesn't replace a design-aware review.
 - **AI got wrong:** reported "lint clean" while lint had a warning (it was grepping for errors only).
   Lint now runs with `--max-warnings=0`, so a warning fails it.
+
+## 2026-11-20: ADR changelogs (Ryan's suggestion)
+- Every ADR now ends with a `## Changelog` (date, change, why, PR/commit), backfilled from git history.
+  The convention is in `docs/adr/README.md` and AGENTS.md. Goal: look back later at how solid each decision was.
+- From the backfill: 4 of 7 original ADRs were substantially changed by Ryan's review (stack storage,
+  upload design, ownership, client access). Two more were amended after reviews or surprises during
+  implementation (0003 after the #34 review; 0006 twice).

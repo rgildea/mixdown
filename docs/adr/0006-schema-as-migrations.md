@@ -34,3 +34,11 @@ not run against it.
 - The hosted DB must never be edited by hand. If it happens, capture it with `supabase db diff`.
 - Because migrations fully describe the schema, creating prod is ~10 minutes. This is tested
   for real in Week 4.
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| 2026-11-19 | Drafted by AI: migrations only; local Docker stack deferred to Week 6. | Initial plan. |
+| 2026-11-19 | Reviewed: dev/prod split before Week 4; R2 CORS as code in `infra/` (`52e185f`). | Real client data arrives in Week 4. |
+| 2026-11-19 | Local Supabase stack **brought forward** to the default dev environment (ADR 0009, PR #30). | Hosted email rate limits made testing against the hosted dev project impractical. |
+| 2026-11-19 | Commands corrected: Supabase CLI v3 needs `--remote` for `db push` / `migration list`; types are generated from the local stack (PR #32). | `db push` silently targeted the local stack. |

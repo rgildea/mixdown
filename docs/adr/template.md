@@ -14,3 +14,8 @@ What we're doing, in one or two sentences, then details.
 
 ## Consequences
 What gets easier, what gets harder, what we must remember.
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| YYYY-MM-DD | Created. | — |

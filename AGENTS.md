@@ -6,7 +6,8 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 ## How we work (rules for the AI)
 - The human is the tech lead and makes architecture calls (data model, security
   policies, upload approach). If a change touches those, stop and propose an ADR
-  in `docs/adr/` instead of just doing it.
+  in `docs/adr/` instead of just doing it. When a change amends an existing ADR, update its body
+  AND add a row to its `## Changelog` (date, change, why, PR); see `docs/adr/README.md`.
 - Each session starts from a GitHub issue or spec. Work only on that. If you notice
   something out of scope, suggest a `later` issue; don't build it.
 - Small steps: one feature → show the diff → run it → commit. Before writing code

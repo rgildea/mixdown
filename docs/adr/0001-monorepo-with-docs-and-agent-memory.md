@@ -31,3 +31,9 @@ One GitHub repo, npm workspaces:
 ## Consequences
 - Vercel project must set **Root Directory = `apps/web`**.
 - Run npm scripts from the root (they forward to the workspace).
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| 2026-11-19 | Drafted by AI from the pre-project plan (`fb84f29`). | Initial setup. |
+| 2026-11-19 | Reviewed and accepted. Agent rules moved to a tool-neutral `AGENTS.md`; `CLAUDE.md` now only imports it (`52e185f`). | Ryan may use Cursor or Zed agents as well as Claude Code; `CLAUDE.md` is Claude-only. |

@@ -18,3 +18,8 @@ The previous attempt stalled in details. Planning has to be cheap, visible, and 
 ## Consequences
 - No separate task tool. The issue tracker doubles as evidence of process for reviewers.
 - Must keep issues small. Anything over ~3 h gets split.
+
+## Changelog
+| Date | Change | Why |
+|---|---|---|
+| 2026-11-19 | Drafted by AI; reviewed and accepted unchanged, plus a no-client-names rule for the public repo (`52e185f`). | — |
