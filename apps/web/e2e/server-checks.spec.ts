@@ -84,8 +84,8 @@ test("a failed upload can be retried without creating a second song", async ({ p
   const title = await submitNewSong(page);
   await expect(page.getByText("The upload failed. Check your connection.")).toBeVisible();
   await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page).toHaveURL("/songs");
-  await expect(page.getByRole("listitem").filter({ hasText: title })).toContainText("mix.mp3");
+  await expect(page).toHaveURL(/\/songs\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("region", { name: "Mix" })).toContainText("mix.mp3");
   expect(await adminCountSongs(title)).toBe(1);
 });
 
@@ -104,6 +104,7 @@ test("a lost finishUpload response can be retried (idempotent)", async ({ page }
   const title = await submitNewSong(page);
   await expect(page.getByText("Couldn't reach the server.")).toBeVisible();
   await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page).toHaveURL("/songs");
-  await expect(page.getByRole("listitem").filter({ hasText: title })).toContainText("mix.mp3");
+  await expect(page).toHaveURL(/\/songs\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Mix" })).toContainText("mix.mp3");
 });

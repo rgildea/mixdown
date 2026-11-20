@@ -101,7 +101,7 @@ export function NewSongForm() {
     setPhase({ name: "finishing" });
     const done = await call(() => finishUpload({ songId: id, key: target.key, filename: f.name, size: f.size }));
     if (!done.ok) return fail(done);
-    if (mounted.current) router.push("/songs");
+    if (mounted.current) router.push(`/songs/${id}`);
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {

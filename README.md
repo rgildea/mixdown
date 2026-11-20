@@ -4,8 +4,25 @@ A mix review and approval portal for audio engineers. Share a mix with a client,
 they leave comments pinned to exact moments on the waveform, compare versions,
 and approve the final mix.
 
-> Status: **Week 1 of 6: foundation.** See [the plan](docs/plan.md) and
-> [open issues](../../issues?q=is%3Aopen+milestone%3A%22Week+1%22).
+> Status: **Week 1 of 6: foundation.** Live: sign in, create a song, upload a mix, play it back.
+> Next: client share links, waveform and timestamped comments (Week 2). See [the plan](docs/plan.md)
+> and [open issues](../../issues?q=is%3Aopen).
+
+## What works today
+- **Invite-only sign-in** with magic links (no passwords; links work across devices).
+- **Studios (workspaces)** own the data; Postgres row-level security keeps each studio's songs private.
+- **Uploads up to 500 MB** (WAV/MP3) go **straight from the browser to Cloudflare R2** with a progress
+  bar; the server only signs and verifies (it never handles the audio).
+- **Playback** in the browser via a fresh 1-hour signed URL; the bucket is never public.
+
+## How it's built (and why)
+Every non-obvious decision has an [ADR](docs/adr/): stack, R2 vs Supabase Storage (egress),
+workspace ownership, the client share-link model, local-first development. The AI-assisted
+process (what the AI got wrong, what I decided) is logged in [NOTES.md](NOTES.md).
+
+Testing: [pgTAP](supabase/tests/database/) tests for the security policies; Playwright end-to-end
+tests that drive the real magic-link flow and **attack the server actions directly** (tampered
+arguments) to prove enforcement doesn't rely on the browser.
 
 ## Stack
 Next.js 16 (App Router, TypeScript) · Tailwind CSS · Supabase (Auth, Postgres + RLS) ·
