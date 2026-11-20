@@ -16,7 +16,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset && node scripts/dev-seed-users.mjs",
     "db:users": "node scripts/dev-seed-users.mjs",
-    "test:e2e": "npm run test:e2e -w @mixdown/web"
+    "test:e2e": "npm run test:e2e -w @mixdown/web",
+    "db:test": "scripts/db-test.sh"
   },
   "devDependencies": {
     "supabase": "^3.2.0"
