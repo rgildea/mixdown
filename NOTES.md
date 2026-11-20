@@ -225,3 +225,18 @@ lined up (#2 closed).
   (my first manual probe of that attack had "failed" for an incidental reason; it is exploitable).
 - **AI got wrong:** proposed and built "allowlist-only invites" without modelling the raw API as an
   attacker would. The review agent did; the bot review on #50 hadn't run yet.
+
+## 2026-11-20: Week 2 S2 (#43), share links, engineer side (Claude Code)
+- **Decided (Ryan):** store the share token in plain text so engineers can re-copy links ("these are just
+  streaming audio links, not bank account numbers"), overriding ADR 0005's hash-only line. Recorded in
+  the changelog.
+- **Built:** `share_links` (one active per song), `song_access` grants created only by
+  `redeem_share_link()`, `has_active_grant`/`can_access_song` helpers, read policies switched to
+  members OR active grantees, and a song-page panel (Create / Copy / Revoke, re-copy after reload).
+- **Tests:** 28 new pgTAP tests covering the full client lifecycle (redeem → read → revoke → cut off → new link →
+  expire), mutation-checked 5 ways; 2 E2E.
+- **AI got wrong (twice):** (1) another vacuous test: a client's "attack" insert selected the link id through
+  RLS, got zero rows and inserted nothing. Same trap as in #5; fixed with an admin-captured id. (2) The new
+  songs read policy re-queried `songs`, which can't see a row inserted in the same statement, so creating a
+  song failed. pgTAP missed it (no `insert … returning` test); the E2E suite caught it. Fixed, a regression
+  test was added, and the rule is in AGENTS.md.
