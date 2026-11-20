@@ -23,10 +23,35 @@ export function localSupabase() {
   return { url, serviceKey: status.SERVICE_ROLE_KEY, anonKey: status.ANON_KEY };
 }
 
+/**
+ * Headers for admin calls. Two key formats exist:
+ * - legacy JWT keys (`eyJ…`): sent as `apikey` AND `Authorization: Bearer`, and must have role service_role;
+ * - new secret keys (`sb_secret_…`): sent ONLY as `apikey` (Supabase reserves Authorization for user JWTs).
+ */
+export function adminHeaders(serviceKey) {
+  if (serviceKey.startsWith("eyJ")) {
+    let role;
+    try {
+      role = JSON.parse(Buffer.from(serviceKey.split(".")[1], "base64url").toString()).role;
+    } catch {
+      role = "unreadable";
+    }
+    if (role !== "service_role") {
+      throw new Error(`That key has role "${role}", not "service_role". Use the service_role (secret) key.`);
+    }
+    return { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "content-type": "application/json" };
+  }
+  if (serviceKey.startsWith("sb_secret_")) return { apikey: serviceKey, "content-type": "application/json" };
+  if (serviceKey.startsWith("sb_publishable_")) {
+    throw new Error("That's the publishable (public) key. Use the secret key (sb_secret_…) or service_role.");
+  }
+  throw new Error("Unrecognised key format. Expected a service_role JWT (eyJ…) or a secret key (sb_secret_…).");
+}
+
 export async function inviteEmail({ url, serviceKey }, email) {
   const res = await fetch(`${url}/rest/v1/rpc/invite_user`, {
     method: "POST",
-    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "content-type": "application/json" },
+    headers: adminHeaders(serviceKey),
     body: JSON.stringify({ email }),
   });
   if (!res.ok) throw new Error(`Inviting ${email} failed: ${res.status} ${await res.text()}`);
@@ -36,7 +61,7 @@ export async function ensureUser({ url, serviceKey }, email) {
   await inviteEmail({ url, serviceKey }, email);
   const res = await fetch(`${url}/auth/v1/admin/users`, {
     method: "POST",
-    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "content-type": "application/json" },
+    headers: adminHeaders(serviceKey),
     body: JSON.stringify({ email, email_confirm: true }),
   });
   if (res.ok) return "created";
