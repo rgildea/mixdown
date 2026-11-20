@@ -49,7 +49,8 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 - Song page with playback via a fresh 1-hour signed URL; private bucket.
 - 30 Playwright tests, including 9 that tamper with Server Action requests to prove the server enforces
   the rules. Local-first dev (Supabase + Mailpit + RustFS in Docker) that also runs in AI cloud sessions.
-- Every box in spec §2 and §9 checked on production **[Ryan: signed-URL expiry result]**.
+- Every box in spec §2 and §9 checked on production, including the signed URL failing after an hour
+  and working again on refresh (results on #7).
 - 7 feature PRs merged (#30, #32, #34, #35, #37, #40, plus the CI workflow #31).
 
 **2. What did I cut or move to Later?**
