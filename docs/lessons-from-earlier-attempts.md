@@ -10,9 +10,12 @@ comments at timestamps → engineer sees them). Every restart rebuilt auth, uplo
    connections), Sentry, marketing pages, many visual-tweak commits. No sharing or comment code ever existed.
 2. **Platform hopping.** Each new platform restarted the same plumbing. The GCP attempt spent **31 of 42
    commits on Cloud Build and deploy fixes**; the 2026 Cloudflare commits were all framework and tooling upgrades.
-3. **Infrastructure for its own sake.** The schema was published as a versioned npm package so other repos
-   could share it (81 commits, mostly release and packaging fixes); an upload "post-processor" queue
-   worker only logged events. Both solved problems a monorepo doesn't have.
+3. **A learning goal competing with the shipping goal.** I wanted to learn Cloudflare's Workers and Queues and
+   build a reactive, decentralized, less monolithic app. So the schema became a versioned npm package
+   shared across repos (81 commits, mostly release and packaging fixes), and an upload "post-processor"
+   queue worker was built that only logged events. Both solved problems a monorepo doesn't have, and the
+   architecture goal crowded out the product. **Lesson:** keep learning experiments separate from the
+   product, or make them the product deliberately. Don't let them in by default.
 4. **Starting from big templates** (Remix Indie Stack, Epic Stack) meant owning lots of code that wasn't the
    product, and much of the early history is template maintenance.
 
