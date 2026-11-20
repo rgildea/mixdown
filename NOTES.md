@@ -71,3 +71,28 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 - **Mac setup snag:** `db:start` looped on "Transport error … 127.0.0.1:54321". Cause: CleanMyMac listens on
   54321 (Supabase's default API port). Moved the project to 553xx, added a fail-fast port check, and
   made retries cloud-only (locally `supabase start` tears its containers down on failure, so retrying looped).
+
+## 2026-11-19: Hosted email + #4 shipped
+- Resend on `mail.mixdown.audio` (DNS added through Resend's Cloudflare integration), custom SMTP on
+  the dev project, `token_hash` templates pasted into the dashboard, Site URL → `/auth/callback`.
+- Verified: sign-in via the new email on a preview, then cross-device (laptop requests, phone opens)
+  on production after merging PR #30.
+- Gotcha: opening a preview link on the phone hit **Vercel's SSO page**. Preview deployments are
+  protected by Vercel Deployment Protection by default (production isn't). Kept it on; cross-device
+  checks happen on production or while logged into Vercel.
+
+## 2026-11-20: Issue #5, schema + songs (Claude Code)
+- **Asked:** #5 with pgTAP tests; migration reviewed by me before it touches hosted.
+- **Built:** one migration (workspaces, members, songs, mix_versions, `private.is_member()`, select/insert-only
+  RLS, anon revoked, personal-workspace trigger that skips anonymous users, backfill), 19 pgTAP tests,
+  generated DB types, `getCurrentWorkspace()`, song list (newest first), new-song form + Server Action,
+  3 Playwright tests incl. the second-account isolation check from spec §9.
+- **AI got wrong:** first draft of the "Bob can't add a version to Alice's song" test selected the id
+  through RLS, got zero rows, and inserted nothing, so it could never fail. Rewritten to use Alice's real id.
+  Then **mutation-checked** the suite: loosened the songs read policy, and exactly the two isolation tests failed.
+- **Decided:** no UPDATE/DELETE policies until editing/deleting is built (least privilege; Later list).
+- **AI got wrong (E2E on the Mac):** the Mailpit helper picked "the new email" by comparing Mailpit's
+  `Created` timestamp (Docker VM clock) with the test's clock (Mac). Passed in the cloud (one clock),
+  failed on the Mac. Suspected Docker VM clock drift after sleep; unconfirmed (clocks matched when
+  checked afterwards, and a stale dev server would also explain it). Now matches by unseen message ID,
+  which removes the clock dependency either way.

@@ -29,15 +29,22 @@ if ! docker ps --format '{{.Names}}' | grep -qx supabase_kong_mixdown &&
 fi
 
 # Extra args are passed through, e.g. `npm run db:start -- --debug`.
-start() { npx supabase start -x studio,imgproxy,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta "$@"; }
+# Services we don't use: Storage (audio is in R2), image proxy, edge functions, logging/analytics.
+EXCLUDE="imgproxy,storage-api,edge-runtime,logflare,vector,supavisor"
+# Studio (the local dashboard, plus postgres-meta which it needs) is on by default. Cloud sessions
+# have no browser, so skip it there unless MIXDOWN_STUDIO=1.
+if [[ -n "${CLAUDE_CODE_REMOTE:-}" && "${MIXDOWN_STUDIO:-}" != "1" ]]; then
+  EXCLUDE="$EXCLUDE,studio,postgres-meta"
+fi
+start() { npx supabase start -x "$EXCLUDE" "$@"; }
 
 if [[ -n "${CLAUDE_CODE_REMOTE:-}" ]]; then
   # Cloud sessions only: after a worker restart, old containers come back with the Docker daemon
   # and can still be booting when the CLI checks them, so retry a couple of times.
-  for attempt in 1 2 3; do
+  for attempt in 1 2 3 4 5 6; do
     start "$@" && break
-    [[ $attempt == 3 ]] && exit 1
-    echo "Stack not ready yet, retrying in 5s…"; sleep 5
+    [[ $attempt == 6 ]] && exit 1
+    echo "Stack not ready yet (Docker may be recovering containers), retrying in 10s…"; sleep 10
   done
 else
   # Locally, a failure is a real error: stop and show it rather than loop.
@@ -48,3 +55,4 @@ echo
 echo "App env (apps/web/.env.local): NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321"
 echo "  NEXT_PUBLIC_SUPABASE_ANON_KEY=\$(npx supabase status -o json | jq -r .ANON_KEY)"
 echo "Mailpit (catches all email): http://127.0.0.1:55324"
+if [[ "$EXCLUDE" != *studio* ]]; then echo "Studio (local dashboard): http://127.0.0.1:55323"; fi

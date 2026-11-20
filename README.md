@@ -25,10 +25,18 @@ npm run dev               # http://localhost:3000
 
 Sign in as `dev@example.test`, then click the link in Mailpit at http://127.0.0.1:55324.
 
+**Studio** (local Supabase dashboard) is at http://127.0.0.1:55323: browse tables, rows, RLS policies
+(Authentication → Policies) and run SQL. It connects as an admin, so it **bypasses RLS**: use
+`npm run db:test` or the app to check what a user can see. Schema changes still go through migrations
+(ADR 0006). If you prototype a change in Studio, capture it with `npx supabase db diff -f <name>`
+and then `npm run db:reset` to prove the migration rebuilds it.
+
 | Command | What |
 |---|---|
 | `npm run db:reset` | Rebuild the local DB from migrations and re-seed dev users |
 | `npm run db:users -- a@example.test` | Create extra local users (signups are off) |
+| `npm run db:test` | pgTAP database tests (RLS policies) in `supabase/tests/database/` |
+| `npm run db:types` | Regenerate `apps/web/src/lib/database.types.ts` after a migration |
 | `npm run test:e2e` | Playwright tests (needs `db:start`; first time on a Mac: `npx playwright install chromium`) |
 | `npm run db:stop` | Stop the local stack |
 

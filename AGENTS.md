@@ -24,11 +24,18 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 - `npm install`: install all workspaces
 - `npm run db:start`: local Supabase + Mailpit (starts dockerd in cloud sessions), seeds dev users
 - `npm run dev`: app on http://localhost:3000 against local Supabase (`apps/web/.env.local`)
-- `npm run test:e2e`: Playwright auth tests (local stack must be running)
+- `npm run test:e2e`: Playwright tests (local stack must be running)
+- `npm run db:test`: pgTAP RLS tests. Every new table/policy gets tests here, and confirm they FAIL
+  when the policy is loosened (a test that never failed proves nothing)
+- `npm run db:types`: regenerate DB types after each migration (commit the result)
 - `npm run db:reset`: rebuild local DB from migrations + re-seed
+- Studio (local dashboard): http://127.0.0.1:55323 on the Mac. Off in cloud sessions unless
+  `MIXDOWN_STUDIO=1`. It bypasses RLS, so never use it as evidence of what a user can see.
 - `npm run build` / `npm run lint` / `npm run typecheck`
 - `npx supabase migration new <name>`: new SQL migration
-- `npx supabase db push`: apply migrations to the linked hosted project
+- `npx supabase db push --remote --dry-run`, then without `--dry-run`: apply migrations to the linked
+  hosted project. Supabase CLI v3 targets the LOCAL stack by default; hosted needs `--remote`.
+  `npx supabase migration list --remote` shows what's applied where.
 
 ## Gotchas
 - Next.js 16 differs from older training data: read `node_modules/next/dist/docs/`
@@ -40,5 +47,9 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 - Magic links use `token_hash` templates (`supabase/templates/`); `emailRedirectTo` must stay
   exactly `${origin}/auth/callback`. Template changes must also be pasted into the hosted dashboards.
 - In Playwright, `getByRole("alert")` also matches Next's route announcer; use text locators.
+- Vercel preview deployments are behind Vercel Deployment Protection (login required); production
+  isn't. Test anything "opened on another device" on production or while logged into Vercel.
 - Supabase Free plan pauses the project after 7 days idle.
+- Pages must authorize themselves (`getCurrentUser()` / `getCurrentWorkspace()`); the `/songs`
+  layout's check does not protect child pages. Server Actions too: they're public endpoints.
 - R2 credentials are server-only: only `src/lib/r2.ts` (which imports `server-only`) may read them.
