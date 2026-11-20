@@ -93,4 +93,6 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 - **Decided:** no UPDATE/DELETE policies until editing/deleting is built (least privilege; Later list).
 - **AI got wrong (E2E on the Mac):** the Mailpit helper picked "the new email" by comparing Mailpit's
   `Created` timestamp (Docker VM clock) with the test's clock (Mac). Passed in the cloud (one clock),
-  failed on the Mac, likely VM clock drift after sleep. Now matches by unseen message ID instead.
+  failed on the Mac. Suspected Docker VM clock drift after sleep; unconfirmed (clocks matched when
+  checked afterwards, and a stale dev server would also explain it). Now matches by unseen message ID,
+  which removes the clock dependency either way.
