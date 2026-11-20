@@ -41,7 +41,7 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 <!-- Sunday: What shipped (link)? What did I cut? What slowed me down? Next week's one goal? -->
 
 ### Week 1 check-in (Foundation): DRAFT, edit before merging
-**1. What shipped?** **[Ryan: production URL]**
+**1. What shipped?** https://mixdown-three.vercel.app/
 - Invite-only magic-link sign-in. Links work across devices. Custom email from `mail.mixdown.audio`.
 - Workspaces own the data; Postgres RLS isolates studios (19 pgTAP tests).
 - Create a song and upload a WAV/MP3 up to 500 MB **straight to Cloudflare R2** with a progress bar. The
