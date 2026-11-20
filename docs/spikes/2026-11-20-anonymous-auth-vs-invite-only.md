@@ -31,3 +31,23 @@ With global signups **on**, invite-only depends on the hook being configured. Ho
 `config.toml` locally but in the **dashboard** on hosted. Forgetting it on a new project (e.g. prod in
 Week 4) **fails open**: anyone could sign up. Untested alternative that fails closed: enforce invite-only
 with a `before insert` trigger on `auth.users` plus an invite allowlist table, entirely in migrations.
+
+## Follow-up: invite allowlist enforced in the database (chosen by Ryan)
+Signups on + anonymous on; `private.invites` allowlist; a `before insert or update` trigger on
+`auth.users`: anonymous inserts are allowed, everything else needs an invited email, and an anonymous user
+may only become permanent with an invited email. `public.invite_user(email)` is executable by `service_role` only.
+
+| Probe | Result |
+|---|---|
+| Anonymous sign-in | works |
+| Stranger email+password signup / magic link with `create_user` | refused (GoTrue 500 "Database error saving new user"), no account |
+| Anonymous user sets an uninvited email | refused, no account |
+| Admin creates an **uninvited** user | refused: invite first, even from the dashboard |
+| `invite_user()` with the anon key or an anonymous user's JWT | 42501 permission denied |
+| `invite_user()` with the service role, then admin create | works, workspace created |
+| Invited person self-signs-up via magic link | works, workspace created |
+| Existing user's magic link; anonymous display-name update + refresh | work |
+
+**Fails closed:** it lives entirely in migrations, so a new project (prod) is invite-only as soon as
+migrations run, whatever the dashboard says. The only dashboard steps are turning signups and anonymous
+sign-ins **on**, and those must come *after* the migration is applied.
