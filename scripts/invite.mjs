@@ -30,6 +30,11 @@ if (remote) {
   target = localSupabase();
 }
 
-for (const email of emails) {
-  console.log(`${email}: ${await ensureUser(target, email.trim().toLowerCase())} (${remote ? "hosted" : "local"})`);
+try {
+  for (const email of emails) {
+    console.log(`${email}: ${await ensureUser(target, email.trim().toLowerCase())} (${remote ? "hosted" : "local"})`);
+  }
+} catch (e) {
+  console.error(`Invite failed: ${e instanceof Error ? e.message : e}`);
+  process.exit(1);
 }
