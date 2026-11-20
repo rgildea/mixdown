@@ -124,3 +124,10 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
   own-workspace check (RLS already hides foreign songs; meaningful once share links exist).
 - **The GitHub review action was blind:** its `allowedTools` contained only the inline-comment tool (no
   `gh pr diff`/`Read`), with a depth-1 checkout. 4 turns, 12 s, $0.15 per "review". Fix in a separate PR.
+- **Fixed review bot, verified:** canary PR #36 with two planted bugs (open redirect, `using (true)` RLS
+  policy disguised as an index migration). The fixed reviewer flagged both, correctly. Lesson: the run's
+  cost and turn count weren't a reliable "is it reviewing?" signal (the working run was cheaper than the
+  blind ones); planting known bugs was.
+- **Second gotcha:** the reviewer skips PRs it has already commented on. #34's stale blind "No issues
+  found" made re-runs exit in 2–3 turns. Deleting it, then close and reopen, gave a real 6-turn review
+  (no issues on the fixed code). Inferred from run behavior; I couldn't read the plugin's rule. In AGENTS.md.
