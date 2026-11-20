@@ -18,7 +18,8 @@ test("create a song and see it at the top of the list", async ({ page }) => {
   await attachMix(page);
   await page.getByRole("button", { name: "Create song and upload" }).click();
 
-  await expect(page).toHaveURL("/songs");
+  await expect(page).toHaveURL(/\/songs\/[0-9a-f-]{36}$/); // lands on the new song's page
+  await page.goto("/songs");
   const first = page.getByRole("list", { name: "Songs" }).getByRole("listitem").first();
   await expect(first).toContainText(title);
   await expect(first).toContainText("T.C.");
@@ -41,7 +42,7 @@ test("another workspace can't see my songs", async ({ page, browser }) => {
   await page.getByLabel("Title").fill(title);
   await attachMix(page);
   await page.getByRole("button", { name: "Create song and upload" }).click();
-  await expect(page.getByText(title)).toBeVisible();
+  await expect(page.getByRole("heading", { name: title })).toBeVisible(); // its song page
 
   const other = await browser.newContext();
   const page2 = await other.newPage();

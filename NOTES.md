@@ -131,3 +131,14 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 - **Second gotcha:** the reviewer skips PRs it has already commented on. #34's stale blind "No issues
   found" made re-runs exit in 2–3 turns. Deleting it, then close and reopen, gave a real 6-turn review
   (no issues on the fixed code). Inferred from run behavior; I couldn't read the plugin's rule. In AGENTS.md.
+
+## 2026-11-20: Issue #7, song page (Claude Code)
+- **Built:** `/songs/[id]` (RLS read; another studio's song, a missing id and a malformed id all give the
+  same 404, so nothing leaks about which songs exist), fresh 1-hour presigned GET per request,
+  `<audio>` playback, "No mix uploaded", a `not-found` page, an error boundary for `/songs/**`, list
+  titles link to their pages, uploads land on the song page. README describes what works and why.
+- **Next 16 drift caught from the bundled docs:** error boundaries get `retry()` (re-fetch), not
+  `reset()`, and `error: unknown`.
+- **Tests (30 total):** playback verified in the browser (duration decoded, currentTime advances), signed
+  URL expiry 3600 s and range support (206), unsigned URL 403, fresh URL on reload, 404 cases, signed-out
+  redirect returns to the song.

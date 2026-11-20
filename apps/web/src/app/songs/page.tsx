@@ -31,7 +31,9 @@ export default async function SongsPage() {
           {songs.map((song) => (
             <li key={song.id} className="flex items-baseline justify-between gap-4 py-3">
               <div className="min-w-0">
-                <p className="truncate font-medium">{song.title}</p>
+                <Link href={`/songs/${song.id}`} className="block truncate font-medium hover:underline">
+                  {song.title}
+                </Link>
                 {song.client_name && <p className="truncate text-sm text-zinc-500">{song.client_name}</p>}
                 <p className="truncate text-xs text-zinc-400">
                   {song.mix_versions[0]

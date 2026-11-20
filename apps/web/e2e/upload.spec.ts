@@ -4,6 +4,7 @@ import path from "node:path";
 import { signIn } from "./mailpit";
 
 const DEV = "dev@example.test";
+const SONG_URL = /\/songs\/[0-9a-f-]{36}$/;
 
 /** A valid PCM WAV: 44-byte header + `seconds` of silence (16-bit, 44.1 kHz, stereo). */
 function wav(seconds: number): Buffer {
@@ -28,7 +29,8 @@ test("upload a WAV, then the song lists its mix", async ({ page }) => {
   await page.getByLabel("Mix").setInputFiles({ name: "final mix.wav", mimeType: "audio/wav", buffer: wav(10) });
   await page.getByRole("button", { name: "Create song and upload" }).click();
 
-  await expect(page).toHaveURL("/songs", { timeout: 30_000 });
+  await expect(page).toHaveURL(SONG_URL, { timeout: 30_000 });
+  await page.goto("/songs");
   const row = page.getByRole("listitem").filter({ hasText: title });
   await expect(row).toContainText("final mix.wav");
   await expect(row).toContainText("1.7 MB");
@@ -58,7 +60,7 @@ test("the progress bar advances during a slow upload", async ({ page }, testInfo
   await expect.poll(value).toBeGreaterThan(0);
   const first = await value();
   await expect.poll(value).toBeGreaterThan(first); // it moves, not just appears
-  await expect(page).toHaveURL("/songs", { timeout: 90_000 });
+  await expect(page).toHaveURL(SONG_URL, { timeout: 90_000 });
 });
 
 test("an MP3 uploads too", async ({ page }) => {
@@ -67,8 +69,8 @@ test("an MP3 uploads too", async ({ page }) => {
   await startNewSong(page, title);
   await page.getByLabel("Mix").setInputFiles({ name: "rough.mp3", mimeType: "audio/mpeg", buffer: Buffer.alloc(300_000, 1) });
   await page.getByRole("button", { name: "Create song and upload" }).click();
-  await expect(page).toHaveURL("/songs", { timeout: 30_000 });
-  await expect(page.getByRole("listitem").filter({ hasText: title })).toContainText("rough.mp3");
+  await expect(page).toHaveURL(SONG_URL, { timeout: 30_000 });
+  await expect(page.getByRole("region", { name: "Mix" })).toContainText("rough.mp3");
 });
 
 test("a mix is required, and the picked file is confirmed", async ({ page }) => {
