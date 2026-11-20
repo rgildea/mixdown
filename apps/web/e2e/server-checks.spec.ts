@@ -105,5 +105,6 @@ test("a lost finishUpload response can be retried (idempotent)", async ({ page }
   await expect(page.getByText("Couldn't reach the server.")).toBeVisible();
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("heading", { name: title })).toBeVisible();
   await expect(page.getByRole("region", { name: "Mix" })).toContainText("mix.mp3");
 });

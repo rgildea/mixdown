@@ -12,19 +12,23 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
   const { id } = await params;
   if (!UUID.test(id)) notFound();
 
-  // Pages authorize themselves. The song is read through RLS: another workspace's song simply
-  // isn't found, which is indistinguishable from a missing one (no existence leak).
-  await getCurrentWorkspace();
+  // Pages authorize themselves. Scoped to the user's own workspace explicitly, not just via RLS:
+  // once share links grant clients read access (ADR 0005), RLS alone would let a user who redeemed
+  // another studio's link see that song here. Clients use /s/[token] instead. A foreign song is
+  // simply not found, indistinguishable from a missing one (no existence leak).
+  const workspace = await getCurrentWorkspace();
   const supabase = await createClient();
   const { data: song, error } = await supabase
     .from("songs")
     .select("id, title, client_name, created_at, mix_versions (version_number, object_key, original_filename, size_bytes, mime_type)")
     .eq("id", id)
+    .eq("workspace_id", workspace.id)
     .maybeSingle();
   if (error) throw error;
   if (!song) notFound();
 
-  const mix = song.mix_versions.find((v) => v.version_number === 1) ?? null;
+  // Latest version (only v1 exists until Week 3 adds versions).
+  const mix = song.mix_versions.toSorted((a, b) => b.version_number - a.version_number)[0] ?? null;
   // A fresh 1-hour signed URL on every request (ADR 0003): refreshing the page restores playback.
   const audioUrl = mix ? await presignPlayback(mix.object_key) : null;
 

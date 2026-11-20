@@ -142,3 +142,10 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 - **Tests (30 total):** playback verified in the browser (duration decoded, currentTime advances), signed
   URL expiry 3600 s and range support (206), unsigned URL 403, fresh URL on reload, 404 cases, signed-out
   redirect returns to the song.
+- **Independent review of PR #37 vs the review bot:** the bot (a real 6-turn run this time) said "No issues
+  found". The agent found one medium issue the bot missed: the song page relied on RLS alone, which
+  would expose another studio's song on the engineer page once share-link grants exist (ADR 0005). It
+  also found a lint warning, a test name promising more than it checked, and always-v1 playback. All
+  fixed. Conclusion: the bot catches blatant bugs; it doesn't replace a design-aware review.
+- **AI got wrong:** reported "lint clean" while lint had a warning (it was grepping for errors only).
+  Lint now runs with `--max-warnings=0`, so a warning fails it.

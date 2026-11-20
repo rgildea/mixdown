@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signIn } from "./mailpit";
+import { requestMagicLink, signIn } from "./mailpit";
 import { adminCreateSong } from "./tamper";
 
 const DEV = "dev@example.test";
@@ -94,7 +94,13 @@ test("signed-out visitors are sent to login and come back to the song", async ({
   await expect(page).toHaveURL("/login");
 
   await page.goto(path);
-  await expect(page).toHaveURL(`/login?next=${encodeURIComponent(path)}`);
+  const loginUrl = `/login?next=${encodeURIComponent(path)}`;
+  await expect(page).toHaveURL(loginUrl);
+
+  // Signing in from there returns to the song, not the list.
+  await page.goto(await requestMagicLink(page, DEV, loginUrl));
+  await expect(page).toHaveURL(path);
+  await expect(page.locator("audio")).toBeVisible();
 });
 
 test("the song list links to each song's page", async ({ page }) => {
