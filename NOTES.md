@@ -91,3 +91,6 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
   through RLS, got zero rows, and inserted nothing, so it could never fail. Rewritten to use Alice's real id.
   Then **mutation-checked** the suite: loosened the songs read policy, and exactly the two isolation tests failed.
 - **Decided:** no UPDATE/DELETE policies until editing/deleting is built (least privilege; Later list).
+- **AI got wrong (E2E on the Mac):** the Mailpit helper picked "the new email" by comparing Mailpit's
+  `Created` timestamp (Docker VM clock) with the test's clock (Mac). Passed in the cloud (one clock),
+  failed on the Mac, likely VM clock drift after sleep. Now matches by unseen message ID instead.
