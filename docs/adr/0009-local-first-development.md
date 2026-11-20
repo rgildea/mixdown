@@ -18,7 +18,7 @@ because the default registry rejects the shared proxy IP).
 **Environments**
 | Env | Supabase | Email | Used for |
 |---|---|---|---|
-| Local (Mac *and* cloud sessions) | CLI stack in Docker (`npm run db:start`) | Mailpit, http://127.0.0.1:55324 | Daily dev, migrations, E2E tests |
+| Local (Mac *and* cloud sessions) | CLI stack in Docker (`npm run db:start`) + RustFS for audio | Mailpit, http://127.0.0.1:55324 | Daily dev, migrations, E2E tests |
 | Hosted dev | `mixdown-dev` (Free) | Custom SMTP | Vercel previews |
 | Prod (before Week 4) | `mixdown-prod` (Pro) | Custom SMTP | Me and real clients |
 
@@ -38,6 +38,13 @@ fallback redirect also lands somewhere that can finish sign-in.
 
 **Hosted email:** custom SMTP (Resend free tier) on hosted projects, with the same templates
 pasted into the dashboard. Raises the send limit, reaches any address, needed for Week 3 alerts anyway.
+
+**Audio storage locally (decided in #6):** RustFS (`rustfs/rustfs:1.0.6`, Apache-2.0, S3-compatible)
+in a container on port 55340 with fixed dev credentials, bucket `mixdown-local`. `src/lib/r2.ts` switches
+to it when `R2_ENDPOINT` is set. Verified: presigned PUT with signed type and length (mismatches → 403),
+HEAD, range GET, bucket CORS. MinIO was the obvious choice but no longer publishes free Docker images
+(2025). The real dev R2 bucket was rejected for local use: it needs secrets on every machine, and cloud
+sessions/CI couldn't run upload tests. Previews and production always use R2.
 
 **Tests:** one Playwright auth smoke suite now (`npm run test:e2e`, local stack + Mailpit).
 The full suite and CI stay in Week 6.

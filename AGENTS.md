@@ -53,3 +53,9 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 - Pages must authorize themselves (`getCurrentUser()` / `getCurrentWorkspace()`); the `/songs`
   layout's check does not protect child pages. Server Actions too: they're public endpoints.
 - R2 credentials are server-only: only `src/lib/r2.ts` (which imports `server-only`) may read them.
+  Locally, audio goes to RustFS (`R2_ENDPOINT=http://127.0.0.1:55340`, started by `db:start`);
+  hosted uses real R2 (no `R2_ENDPOINT`).
+- Presigned PUTs must pass `signableHeaders: new Set(["content-type", "content-length"])`: the AWS SDK
+  signs only content-length by default, so storage would accept any content type.
+- Upload rules (`src/lib/upload-rules.ts`) are shared by browser and server; WAV/MP3 is decided by
+  extension and stored with one canonical MIME type (browsers disagree on WAV MIME types).

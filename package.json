@@ -13,7 +13,7 @@
     "lint": "npm run lint -w @mixdown/web",
     "typecheck": "npm run typecheck -w @mixdown/web",
     "db:start": "scripts/db-start.sh",
-    "db:stop": "supabase stop",
+    "db:stop": "supabase stop && (docker stop mixdown_rustfs >/dev/null 2>&1 || true)",
     "db:reset": "supabase db reset && node scripts/dev-seed-users.mjs",
     "db:users": "node scripts/dev-seed-users.mjs",
     "test:e2e": "npm run test:e2e -w @mixdown/web",

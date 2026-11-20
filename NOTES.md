@@ -96,3 +96,16 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
   failed on the Mac. Suspected Docker VM clock drift after sleep; unconfirmed (clocks matched when
   checked afterwards, and a stale dev server would also explain it). Now matches by unseen message ID,
   which removes the clock dependency either way.
+
+## 2026-11-20: Issue #6, uploads (Claude Code)
+- **Decided:** local audio storage = RustFS. The AI probed before recommending: MinIO's Docker Hub
+  images no longer exist; RustFS passed presigned PUT/HEAD/range GET/CORS checks.
+- **Caught by the probe:** the AWS SDK signs only `content-length` into presigned PUTs by default, so a
+  wrong content type would have been accepted by R2 too. Fixed with `signableHeaders`; mismatches now 403.
+- **Built:** shared upload rules (by extension, canonical MIME), `lib/r2.ts` (server-only; R2 or RustFS),
+  `createSong` → `createUploadUrl` → XHR PUT with progress → `finishUpload` (key-prefix check, HEAD
+  size/type check, then the `mix_versions` row), "Try again" without creating a second song, "No mix yet"
+  in the list. 5 new E2E tests (WAV, MP3, no file, 600 MB sparse file, .txt/.aiff).
+- **Verified:** progress bar on a throttled 200 MB upload (screenshot at 43%); canary build shows no R2
+  secret or S3 code in client chunks. The first grep "found" hits, but they were React's `-canary` version string.
+- **AI got wrong:** used refs for render-visible state; the React lint rules flagged it, so it switched to state.
