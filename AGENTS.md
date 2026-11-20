@@ -61,8 +61,10 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 - In Playwright, `getByRole("alert")` also matches Next's route announcer; use text locators.
 - Vercel preview deployments are behind Vercel Deployment Protection (login required); production
   isn't. Test anything "opened on another device" on production or while logged into Vercel.
-- The Claude Code Review action reviews a PR **once**: when its "## Code review" comment already exists,
-  later runs skip in ~2 turns. To re-review after fixes, delete that comment, then close and reopen the PR.
+- The Claude review (`.github/workflows/claude-code-review.yml`) re-reviews on every push and edits one
+  "## Claude review" comment. Its instructions are `.github/review-prompt.md`, read from the BASE branch, so
+  a PR changing them is reviewed with the old ones; a PR changing the workflow itself isn't reviewed
+  ("did not complete"). "Did not complete" never means "no findings". It doesn't replace an independent review.
 - Supabase Free plan pauses the project after 7 days idle.
 - Pages must authorize themselves (`getCurrentUser()` / `getCurrentWorkspace()`); the `/songs`
   layout's check does not protect child pages. Server Actions too: they're public endpoints.

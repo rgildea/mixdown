@@ -225,3 +225,14 @@ lined up (#2 closed).
   (my first manual probe of that attack had "failed" for an incidental reason; it is exploitable).
 - **AI got wrong:** proposed and built "allowlist-only invites" without modelling the raw API as an
   attacker would. The review agent did; the bot review on #50 hadn't run yet.
+
+## 2026-11-20: Making the bot review trustworthy (Claude Code)
+- **Asked:** research why the `code-review` plugin said "No issues found" on #37 and #52 when independent
+  reviews found medium issues, then fix it. Write-up: `docs/research/2026-11-claude-code-review.md`.
+- **Found (in the plugin's source):** it skips any PR Claude has already commented on, keeps only bugs that are
+  certain from the diff alone, and lists "lack of test coverage, general security issues" as false positives.
+  Our runs never used Opus, so its multi-agent steps didn't run either. And the action's default auto
+  permission mode meant our "read-only" tool list wasn't strict.
+- **Changed:** a project-specific prompt (`.github/review-prompt.md`, pointing at AGENTS.md), Opus at high
+  effort, strict read-only tools, every push re-reviewed, one comment edited in place, posted by a separate job.
+  Cost per push goes up (estimate $1–3); validation is a canary PR after merge.
