@@ -29,6 +29,8 @@ Sign in as `dev@example.test`, then click the link in Mailpit at http://127.0.0.
 |---|---|
 | `npm run db:reset` | Rebuild the local DB from migrations and re-seed dev users |
 | `npm run db:users -- a@example.test` | Create extra local users (signups are off) |
+| `npm run db:test` | pgTAP database tests (RLS policies) in `supabase/tests/database/` |
+| `npm run db:types` | Regenerate `apps/web/src/lib/database.types.ts` after a migration |
 | `npm run test:e2e` | Playwright tests (needs `db:start`; first time on a Mac: `npx playwright install chromium`) |
 | `npm run db:stop` | Stop the local stack |
 

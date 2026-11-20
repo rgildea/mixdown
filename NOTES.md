@@ -80,3 +80,14 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
 - Gotcha: opening a preview link on the phone hit **Vercel's SSO page**. Preview deployments are
   protected by Vercel Deployment Protection by default (production isn't). Kept it on; cross-device
   checks happen on production or while logged into Vercel.
+
+## 2026-11-20: Issue #5, schema + songs (Claude Code)
+- **Asked:** #5 with pgTAP tests; migration reviewed by me before it touches hosted.
+- **Built:** one migration (workspaces, members, songs, mix_versions, `private.is_member()`, select/insert-only
+  RLS, anon revoked, personal-workspace trigger that skips anonymous users, backfill), 19 pgTAP tests,
+  generated DB types, `getCurrentWorkspace()`, song list (newest first), new-song form + Server Action,
+  3 Playwright tests incl. the second-account isolation check from spec §9.
+- **AI got wrong:** first draft of the "Bob can't add a version to Alice's song" test selected the id
+  through RLS, got zero rows, and inserted nothing, so it could never fail. Rewritten to use Alice's real id.
+  Then **mutation-checked** the suite: loosened the songs read policy, and exactly the two isolation tests failed.
+- **Decided:** no UPDATE/DELETE policies until editing/deleting is built (least privilege; Later list).

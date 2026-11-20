@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
+import type { Database } from "@/lib/database.types";
 
 const PROTECTED_PREFIXES = ["/songs"];
 
@@ -11,7 +12,7 @@ const PROTECTED_PREFIXES = ["/songs"];
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(env.supabaseUrl(), env.supabaseAnonKey(), {
+  const supabase = createServerClient<Database>(env.supabaseUrl(), env.supabaseAnonKey(), {
     cookies: {
       getAll() {
         return request.cookies.getAll();

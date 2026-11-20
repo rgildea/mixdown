@@ -24,7 +24,10 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 - `npm install`: install all workspaces
 - `npm run db:start`: local Supabase + Mailpit (starts dockerd in cloud sessions), seeds dev users
 - `npm run dev`: app on http://localhost:3000 against local Supabase (`apps/web/.env.local`)
-- `npm run test:e2e`: Playwright auth tests (local stack must be running)
+- `npm run test:e2e`: Playwright tests (local stack must be running)
+- `npm run db:test`: pgTAP RLS tests. Every new table/policy gets tests here, and confirm they FAIL
+  when the policy is loosened (a test that never failed proves nothing)
+- `npm run db:types`: regenerate DB types after each migration (commit the result)
 - `npm run db:reset`: rebuild local DB from migrations + re-seed
 - `npm run build` / `npm run lint` / `npm run typecheck`
 - `npx supabase migration new <name>`: new SQL migration
@@ -43,4 +46,6 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
 - Vercel preview deployments are behind Vercel Deployment Protection (login required); production
   isn't. Test anything "opened on another device" on production or while logged into Vercel.
 - Supabase Free plan pauses the project after 7 days idle.
+- Pages must authorize themselves (`getCurrentUser()` / `getCurrentWorkspace()`); the `/songs`
+  layout's check does not protect child pages. Server Actions too: they're public endpoints.
 - R2 credentials are server-only: only `src/lib/r2.ts` (which imports `server-only`) may read them.

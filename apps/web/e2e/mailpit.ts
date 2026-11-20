@@ -42,3 +42,9 @@ export async function requestMagicLink(page: Page, email: string, path = "/login
   await expect(page.getByRole("status")).toContainText(email);
   return linkSince(email, since);
 }
+
+/** Signs `page` in as `email` through the real magic-link flow. */
+export async function signIn(page: Page, email: string) {
+  await page.goto(await requestMagicLink(page, email));
+  await expect(page).toHaveURL("/songs");
+}
