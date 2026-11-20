@@ -21,7 +21,7 @@ async function startNewSong(page: import("@playwright/test").Page, title: string
   await page.getByLabel("Title").fill(title);
 }
 
-test("upload a WAV: progress, then the song lists its mix", async ({ page }) => {
+test("upload a WAV, then the song lists its mix", async ({ page }) => {
   const title = `Upload ${Date.now()}`;
   await signIn(page, DEV);
   await startNewSong(page, title);
@@ -33,6 +33,32 @@ test("upload a WAV: progress, then the song lists its mix", async ({ page }) => 
   await expect(row).toContainText("final mix.wav");
   await expect(row).toContainText("1.7 MB");
   await expect(row).not.toContainText("No mix yet");
+});
+
+test("the progress bar advances during a slow upload", async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
+  mkdirSync(testInfo.outputDir, { recursive: true });
+  const big = path.join(testInfo.outputDir, "slow.wav");
+  const fd = openSync(big, "w");
+  ftruncateSync(fd, 100 * 1024 * 1024); // sparse: 100 MB of zeros
+  closeSync(fd);
+
+  await signIn(page, DEV);
+  await startNewSong(page, `Progress ${Date.now()}`);
+  await page.getByLabel("Mix").setInputFiles(big);
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Network.emulateNetworkConditions", {
+    offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: 20 * 1024 * 1024,
+  });
+  await page.getByRole("button", { name: "Create song and upload" }).click();
+
+  const bar = page.getByLabel("Upload progress");
+  await expect(bar).toBeVisible({ timeout: 30_000 });
+  const value = () => bar.getAttribute("value").then(Number);
+  await expect.poll(value).toBeGreaterThan(0);
+  const first = await value();
+  await expect.poll(value).toBeGreaterThan(first); // it moves, not just appears
+  await expect(page).toHaveURL("/songs", { timeout: 90_000 });
 });
 
 test("an MP3 uploads too", async ({ page }) => {

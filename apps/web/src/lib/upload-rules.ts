@@ -14,9 +14,14 @@ export type UploadCheck =
   | { ok: true; contentType: UploadContentType; ext: keyof typeof TYPES }
   | { ok: false; error: string };
 
-export function checkUpload(file: { name: string; size: number }): UploadCheck {
+export function checkUpload(file: { name: unknown; size: unknown }): UploadCheck {
+  // Server Actions receive untrusted input: validate types, not just values.
+  if (typeof file.name !== "string" || typeof file.size !== "number" || !Number.isSafeInteger(file.size)) {
+    return { ok: false, error: "Invalid file." };
+  }
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-  if (!(ext in TYPES)) {
+  // hasOwn, not `in`: `"constructor" in TYPES` is true via the prototype chain.
+  if (!Object.hasOwn(TYPES, ext)) {
     return { ok: false, error: "Only WAV or MP3 files can be uploaded." };
   }
   if (file.size <= 0) return { ok: false, error: "That file is empty." };

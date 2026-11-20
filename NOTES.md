@@ -113,3 +113,14 @@ decided. Raw material for the Week 6 write-up and interviews. Keep entries short
   Now a bordered picker with a real button and a "Ready to upload: name (size)" confirmation, the mix is
   required (matches the spec flow; "Skip for now" remains after a failed upload), and the button says
   "Create song and upload". Making the mix optional in the first place was the AI's call, and a bad one.
+- **Independent review (separate AI agent) of PR #34 found real issues** that the GitHub review action
+  missed ("No issues found"): thrown Server Action errors froze the form on "Finishing…"; `ext in TYPES`
+  accepted `x.constructor` (prototype chain); upload access inferred from read access (breaks once share
+  links grant reads); retry looped on "already has a mix". All fixed.
+- **Server checks now have tests that bypass the browser:** Playwright intercepts and tampers with the
+  Server Action JSON (foreign song, prototype extension, 600 MB, string size, foreign key, size mismatch,
+  wrong content type at storage, retry without a duplicate song, lost finish response). Mutation-checked:
+  removing each of six server checks makes its test fail. Not independently testable yet: the
+  own-workspace check (RLS already hides foreign songs; meaningful once share links exist).
+- **The GitHub review action was blind:** its `allowedTools` contained only the inline-comment tool (no
+  `gh pr diff`/`Read`), with a depth-1 checkout. 4 turns, 12 s, $0.15 per "review". Fix in a separate PR.

@@ -6,19 +6,21 @@ import { getCurrentWorkspace } from "@/lib/workspace";
 import { checkUpload } from "@/lib/upload-rules";
 import { presignUpload, statObject } from "@/lib/r2";
 
-// Server Actions are public endpoints: each one authorizes itself (getCurrentWorkspace) and reads
-// the song through the user's Supabase client, so RLS decides access. Upload flow: ADR 0003.
+// Server Actions are public endpoints and their arguments are untrusted (anyone can POST them).
+// Each one authorizes itself and validates everything it is given. Upload flow: ADR 0003.
 
-type Result<T> = ({ ok: true } & T) | { ok: false; error: string };
+/** `retryable`: whether trying the same thing again might work (drives the "Try again" button). */
+type Result<T> = ({ ok: true } & T) | { ok: false; error: string; retryable: boolean };
+const fail = (error: string, retryable = false) => ({ ok: false as const, error, retryable });
 
 export async function createSong(input: {
   title: string;
   clientName: string;
 }): Promise<Result<{ songId: string }>> {
-  const title = input.title.trim();
-  const clientName = input.clientName.trim();
-  if (title.length < 1 || title.length > 200) return { ok: false, error: "Title must be 1–200 characters." };
-  if (clientName.length > 200) return { ok: false, error: "Client name must be 200 characters or fewer." };
+  const title = typeof input?.title === "string" ? input.title.trim() : "";
+  const clientName = typeof input?.clientName === "string" ? input.clientName.trim() : "";
+  if (title.length < 1 || title.length > 200) return fail("Title must be 1–200 characters.");
+  if (clientName.length > 200) return fail("Client name must be 200 characters or fewer.");
 
   const workspace = await getCurrentWorkspace();
   const supabase = await createClient();
@@ -30,17 +32,21 @@ export async function createSong(input: {
 
   if (error || !data) {
     console.error("createSong:", error?.code, error?.message);
-    return { ok: false, error: "Couldn't create the song. Try again." };
+    return fail("Couldn't create the song. Try again.", true);
   }
   return { ok: true, songId: data.id };
 }
 
-/** Loads a song the current user can access (RLS), or null. */
-async function accessibleSong(songId: string) {
-  await getCurrentWorkspace(); // authenticates (redirects to /login if signed out)
+/**
+ * A song the current user may upload to: visible through RLS AND in the user's own workspace.
+ * Read access alone isn't enough: share-link clients will be able to read songs (ADR 0005).
+ */
+async function uploadableSong(songId: unknown) {
+  if (typeof songId !== "string") return null;
+  const workspace = await getCurrentWorkspace(); // authenticates (redirects if signed out)
   const supabase = await createClient();
   const { data } = await supabase.from("songs").select("id, workspace_id").eq("id", songId).maybeSingle();
-  return data;
+  return data && data.workspace_id === workspace.id ? data : null;
 }
 
 const keyPrefix = (song: { id: string; workspace_id: string }) => `${song.workspace_id}/${song.id}/v1-`;
@@ -50,15 +56,20 @@ export async function createUploadUrl(input: {
   filename: string;
   size: number;
 }): Promise<Result<{ url: string; key: string; contentType: string }>> {
-  const check = checkUpload({ name: input.filename, size: input.size });
-  if (!check.ok) return { ok: false, error: check.error };
+  const check = checkUpload({ name: input?.filename, size: input?.size });
+  if (!check.ok) return fail(check.error);
 
-  const song = await accessibleSong(input.songId);
-  if (!song) return { ok: false, error: "Song not found." };
+  const song = await uploadableSong(input.songId);
+  if (!song) return fail("Song not found.");
 
   const key = `${keyPrefix(song)}${randomUUID()}.${check.ext}`;
-  const url = await presignUpload(key, check.contentType, input.size);
-  return { ok: true, url, key, contentType: check.contentType };
+  try {
+    const url = await presignUpload(key, check.contentType, input.size);
+    return { ok: true, url, key, contentType: check.contentType };
+  } catch (e) {
+    console.error("createUploadUrl:", e);
+    return fail("Couldn't start the upload. Try again.", true);
+  }
 }
 
 export async function finishUpload(input: {
@@ -67,22 +78,28 @@ export async function finishUpload(input: {
   filename: string;
   size: number;
 }): Promise<Result<object>> {
-  const check = checkUpload({ name: input.filename, size: input.size });
-  if (!check.ok) return { ok: false, error: check.error };
+  const check = checkUpload({ name: input?.filename, size: input?.size });
+  if (!check.ok) return fail(check.error);
 
-  const song = await accessibleSong(input.songId);
-  if (!song) return { ok: false, error: "Song not found." };
+  const song = await uploadableSong(input.songId);
+  if (!song) return fail("Song not found.");
 
   // Only accept keys we could have issued for this song (no registering arbitrary objects).
   const expected = new RegExp(`^${keyPrefix(song)}[0-9a-f-]{36}\\.${check.ext}$`);
-  if (!expected.test(input.key)) return { ok: false, error: "Invalid upload." };
+  if (typeof input.key !== "string" || !expected.test(input.key)) return fail("Invalid upload.");
 
   // The database must never point at a missing or different file.
-  const stored = await statObject(input.key);
-  if (!stored) return { ok: false, error: "The upload didn't reach storage. Try again." };
+  let stored;
+  try {
+    stored = await statObject(input.key);
+  } catch (e) {
+    console.error("finishUpload: stat failed", e);
+    return fail("Couldn't confirm the upload. Try again.", true);
+  }
+  if (!stored) return fail("The upload didn't reach storage. Try again.", true);
   if (stored.size !== input.size || stored.contentType !== check.contentType) {
     console.error("finishUpload: mismatch", { key: input.key, stored, expectedSize: input.size });
-    return { ok: false, error: "The uploaded file doesn't match. Try again." };
+    return fail("The uploaded file doesn't match. Choose the file again.", true);
   }
 
   const supabase = await createClient();
@@ -95,10 +112,14 @@ export async function finishUpload(input: {
     size_bytes: input.size,
   });
 
+  if (error?.code === "23505") {
+    // The song already has its v1 mix (e.g. the first finish succeeded but its response was lost
+    // and the user retried). The goal is met; the extra object is an orphan (cleanup: Later list).
+    return { ok: true };
+  }
   if (error) {
-    if (error.code === "23505") return { ok: false, error: "This song already has a mix." };
     console.error("finishUpload:", error.code, error.message);
-    return { ok: false, error: "Couldn't save the upload. Try again." };
+    return fail("Couldn't save the upload. Try again.", true);
   }
   return { ok: true };
 }
