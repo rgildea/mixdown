@@ -30,7 +30,8 @@ export async function updateSession(request: NextRequest) {
 
   // Don't put code between createServerClient and getClaims: it triggers the refresh.
   const { data } = await supabase.auth.getClaims();
-  const signedIn = Boolean(data?.claims?.sub);
+  // Anonymous share-link clients (ADR 0005) have a session but are NOT signed in as engineers.
+  const signedIn = Boolean(data?.claims?.sub) && !data?.claims?.is_anonymous;
   const { pathname, search } = request.nextUrl;
 
   const redirectTo = (path: string) => {

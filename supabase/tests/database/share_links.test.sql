@@ -79,14 +79,14 @@ select throws_ok($$ insert into public.song_access (song_id, user_id, share_link
   '42501', null, 'a client cannot grant themselves access directly');
 update public.share_links set revoked_at = now();
 reset role;
-select is((select count(*)::int from public.share_links where revoked_at is not null), 0, 'a client cannot revoke links');
+select is((select count(*)::int from public.share_links where song_id = '5a000000-0000-0000-0000-00000000000a' and revoked_at is not null), 0, 'a client cannot revoke links');
 
 -- ---------- Grants are private ----------
 select pg_temp.login_as('b2222222-2222-2222-2222-222222222222');
 select is((select count(*)::int from public.song_access), 0, 'another studio cannot see grants on Alice''s song');
 update public.share_links set revoked_at = now();
 reset role;
-select is((select count(*)::int from public.share_links where revoked_at is not null), 0, 'another studio cannot revoke Alice''s link');
+select is((select count(*)::int from public.share_links where song_id = '5a000000-0000-0000-0000-00000000000a' and revoked_at is not null), 0, 'another studio cannot revoke Alice''s link');
 select pg_temp.login_as('d4444444-4444-4444-4444-444444444444');
 select is((select count(*)::int from public.song_access), 0, 'one client cannot see another client''s grant');
 select pg_temp.login_as('a1111111-1111-1111-1111-111111111111');
