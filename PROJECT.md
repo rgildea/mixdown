@@ -34,8 +34,10 @@ Cloudflare R2 for audio (presigned URLs), Vercel hosting. npm workspaces monorep
 - Schema changes only via migrations in `supabase/migrations/`, never by clicking in the dashboard.
 - Next.js 16: route protection lives in `src/proxy.ts` (formerly `middleware.ts`).
 - Keep it simple: no state libraries, no ORMs, no component libraries in Week 1.
-- UI uses the semantic tokens in `globals.css` and our own components in `src/components/ui/`, never raw
-  palette shades or one-off button styles (`docs/design-system.md`).
+- UI follows the "Control room" design system (`docs/design-system.md`): semantic tokens in `globals.css`
+  and our own components in `src/components/ui/`, never raw palette shades, hex values or one-off button
+  styles. One amber `primary` action per view; timecodes, links and file names in mono; lines, not
+  shadows; every colour token defined for both dark (default) and light.
 - One feature per branch/PR, closing its GitHub issue. Branch: `w<week>/<issue>-<slug>` (see `AGENTS.md`).
 
 ## Later list

@@ -20,13 +20,13 @@ export function PageHeader({
           ← {back.label}
         </Link>
       )}
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+      <h1 className="text-title font-semibold">{title}</h1>
       {meta && <p className="text-sm text-subtle">{meta}</p>}
     </div>
   );
   if (!actions) return heading;
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex items-end justify-between gap-4">
       {heading}
       {actions}
     </div>

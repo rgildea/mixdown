@@ -22,7 +22,7 @@ export default async function SharePage({ params }: PageProps<"/s/[token]">) {
   if (!SHARE_TOKEN.test(token)) {
     return (
       <Shell>
-        <h1 className="text-2xl font-semibold tracking-tight">This link isn&apos;t valid</h1>
+        <h1 className="text-title font-semibold">This link isn&apos;t valid</h1>
         <p className="text-muted">Check that you copied the whole link, or ask for a new one.</p>
       </Shell>
     );
@@ -46,14 +46,14 @@ export default async function SharePage({ params }: PageProps<"/s/[token]">) {
     if (own) {
       return (
         <Shell>
-          <h1 className="text-2xl font-semibold tracking-tight">This is your share link</h1>
+          <h1 className="text-title font-semibold">This is your share link</h1>
           <p className="text-muted">
             {own.revoked_at
               ? "You revoked it, so your client now sees \"This link is no longer active\"."
               : "This is the page your client sees."}
           </p>
           {!own.revoked_at && <OpenButton token={token} label="Preview as client" />}
-          <ButtonLink href={`/songs/${own.song_id}`} variant="link" className="text-subtle">
+          <ButtonLink href={`/songs/${own.song_id}`} variant="link">
             Back to song
           </ButtonLink>
         </Shell>
@@ -62,7 +62,7 @@ export default async function SharePage({ params }: PageProps<"/s/[token]">) {
 
     return (
       <Shell>
-        <h1 className="text-2xl font-semibold tracking-tight">A mix has been shared with you</h1>
+        <h1 className="text-title font-semibold">A mix has been shared with you</h1>
         <p className="text-muted">
           Signed in as <span className="font-medium text-foreground">{user.email ?? "your account"}</span>. The mix will be added to
           this account.
@@ -74,7 +74,7 @@ export default async function SharePage({ params }: PageProps<"/s/[token]">) {
 
   return (
     <Shell>
-      <h1 className="text-2xl font-semibold tracking-tight">A mix has been shared with you</h1>
+      <h1 className="text-title font-semibold">A mix has been shared with you</h1>
       <p className="text-muted">No account needed. Listen in your browser.</p>
       <OpenButton token={token} />
     </Shell>

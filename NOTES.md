@@ -353,3 +353,17 @@ lined up (#2 closed).
   (5 s tone; 15 min at 8 kbps, under 1 MB) prove an MP3 gets a waveform and a long one is never decoded (fails on
   the old code). **Ryan:** "This is why I wanted to do it on the server": later issue #63 for an async server-side
   peaks job (needs an ADR).
+
+## W2: Apply the "Control room" design system (#28)
+- **Asked:** apply Ryan's Claude Design system ("Control room") to the app for a more elegant look, and write
+  design guidelines into the docs. The artifact was readable directly from the session; no export needed.
+- **Built:** dark-first token values with an equal light theme (`prefers-color-scheme`), new tokens
+  (`surface-raised`/`-sunken`, `accent-*`, `focus-ring`, `waveform-*`, `playhead`), Hanken Grotesk + JetBrains Mono,
+  6/10px radii, a type scale (`text-display`/`title`/`heading`, 15px body), 960px shell, a global amber focus ring.
+  `Button` gains `secondary` (now the default) and `ghost`; every page's one main action is now explicitly
+  `variant="primary"`. Waveform sits in a sunken well; amber is only the playhead. Wordmark gets meter bars.
+  `docs/design-system.md` rewritten as the rulebook; pointers in `PROJECT.md` and `AGENTS.md`.
+- **Decided:** the design's review components (Player, Comment, VersionSwitcher, ApprovalBar…) are not built here;
+  their tokens get added with the story that first uses them. Light/dark follows the OS (no toggle).
+- Not verified: Safari/Firefox; the native `<audio>` controls follow `color-scheme` but still look like the browser's.
+  The waveform reads its colours once at mount, so switching OS theme mid-page leaves it in the old colours until reload.

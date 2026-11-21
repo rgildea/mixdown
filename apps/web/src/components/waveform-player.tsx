@@ -40,14 +40,15 @@ export function WaveformPlayer({ src, label, peaks, durationMs }: Props) {
         media: audio,
         peaks: [peaks],
         duration: durationMs / 1000,
-        height: 72,
+        height: 80,
         barWidth: 2,
         barGap: 1,
         barRadius: 1,
-        waveColor: token(container, "--line-strong"),
-        progressColor: token(container, "--primary"),
-        cursorColor: token(container, "--primary"),
-        cursorWidth: 1,
+        // Flat bars: played in the text colour, unplayed recessed; amber is only the playhead.
+        waveColor: token(container, "--waveform-rest"),
+        progressColor: token(container, "--waveform-played"),
+        cursorColor: token(container, "--playhead"),
+        cursorWidth: 2,
         dragToSeek: true,
       });
       w.on("ready", () => !destroyed && setReady(true));
@@ -69,7 +70,7 @@ export function WaveformPlayer({ src, label, peaks, durationMs }: Props) {
           data-testid="waveform"
           data-ready={ready || undefined}
           aria-hidden="true"
-          className="h-[72px] w-full cursor-pointer"
+          className="box-content h-20 w-full cursor-pointer rounded-control bg-surface-sunken py-2"
         />
       )}
       <audio ref={audioRef} controls preload="metadata" src={src} className="w-full" aria-label={label}>

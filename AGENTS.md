@@ -72,6 +72,9 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
   id = …` in the songs policy): the lookup can't see a row inserted in the same statement, so
   `insert … returning` fails. Check the row's own columns instead. pgTAP covers this for `songs`.
 - Supabase Free plan pauses the project after 7 days idle.
+- UI changes follow `docs/design-system.md` (rules, tokens, components). Check new UI in both themes:
+  dark is the default and light follows the OS (`colorScheme: "light"` in Playwright). `Button` defaults
+  to `secondary`; pass `variant="primary"` for the one main action in a view.
 - Pages must authorize themselves (`getCurrentUser()` / `getCurrentWorkspace()`); the `/songs`
   layout's check does not protect child pages. Server Actions too: they're public endpoints.
 - R2 credentials are server-only: only `src/lib/r2.ts` (which imports `server-only`) may read them.

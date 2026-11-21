@@ -24,7 +24,7 @@ export function LoginForm({ next }: { next?: string }) {
       <Field label="Email" htmlFor="email" error={state.status === "error" ? state.message : undefined}>
         <Input id="email" name="email" type="email" required autoComplete="email" defaultValue={state.email} />
       </Field>
-      <Button type="submit" size="md" disabled={pending}>
+      <Button type="submit" variant="primary" size="md" disabled={pending}>
         {pending ? "Sending…" : "Send magic link"}
       </Button>
     </form>
