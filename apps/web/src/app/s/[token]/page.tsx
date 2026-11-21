@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { getSessionUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { SHARE_TOKEN } from "@/lib/share-token";
 import { OpenButton } from "./open-button";
 
@@ -27,6 +30,48 @@ export default async function SharePage({ params }: PageProps<"/s/[token]">) {
 
   // No side effects on load, for anyone: link previews and cross-site requests can't sign anyone in
   // or redeem anything. Visitors click Listen (returning clients can bookmark /listen/... instead).
+  // The page only READS who is visiting, to pick the copy. Previews carry no cookies: generic copy.
+  const user = await getSessionUser();
+
+  if (user && !user.is_anonymous) {
+    // RLS lets studio members (and only them) read their songs' links, so a row means "your own link".
+    const supabase = await createClient();
+    const { data: own, error } = await supabase
+      .from("share_links")
+      .select("song_id, revoked_at")
+      .eq("token", token)
+      .maybeSingle();
+    if (error) console.error("share page own-link check:", error.code, error.message);
+
+    if (own) {
+      return (
+        <Shell>
+          <h1 className="text-2xl font-semibold tracking-tight">This is your share link</h1>
+          <p className="text-zinc-600">
+            {own.revoked_at
+              ? "You revoked it, so your client now sees \"This link is no longer active\"."
+              : "This is the page your client sees."}
+          </p>
+          {!own.revoked_at && <OpenButton token={token} label="Preview as client" />}
+          <Link href={`/songs/${own.song_id}`} className="text-sm text-zinc-500 underline hover:text-zinc-900">
+            Back to song
+          </Link>
+        </Shell>
+      );
+    }
+
+    return (
+      <Shell>
+        <h1 className="text-2xl font-semibold tracking-tight">A mix has been shared with you</h1>
+        <p className="text-zinc-600">
+          Signed in as <span className="font-medium text-zinc-900">{user.email ?? "your account"}</span>. The mix will be added to
+          this account.
+        </p>
+        <OpenButton token={token} />
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
       <h1 className="text-2xl font-semibold tracking-tight">A mix has been shared with you</h1>

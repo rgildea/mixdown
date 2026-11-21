@@ -5,7 +5,7 @@ import { isAuthApiError, isAuthSessionMissingError } from "@supabase/supabase-js
 import { createClient } from "@/lib/supabase/client";
 import { redeemSharedMix } from "./actions";
 
-export function OpenButton({ token }: { token: string }) {
+export function OpenButton({ token, label = "Listen" }: { token: string; label?: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +56,7 @@ export function OpenButton({ token }: { token: string }) {
         onClick={open}
         className="rounded-md bg-zinc-900 px-6 py-3 text-white disabled:opacity-50"
       >
-        {pending ? "Opening…" : "Listen"}
+        {pending ? "Opening…" : label}
       </button>
       {error && (
         <p className="text-sm text-red-700" role="alert">

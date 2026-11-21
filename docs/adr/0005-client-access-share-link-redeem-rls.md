@@ -19,7 +19,11 @@ permission system that grows into that, not two.
    **Listen**. If they have no session, the **browser** signs them in anonymously (a real `auth.uid()`, no
    email), so Supabase's per-IP anonymous limit counts each visitor's own IP. A Server Action then
    redeems the link for that session and goes to `/listen/[songId]`. The server never creates users. The click
-   means link previews and cross-site requests can't sign anyone in or create grants.
+   means link previews and cross-site requests can't sign anyone in or create grants. The page only
+   **reads** the session to pick its copy: a studio member sees "This is your share link" (with a client
+   preview and a link back to the song); any other signed-in account is told the mix will be added to
+   that account (its grant goes on the real user, which works across devices); anonymous visitors and
+   previews (no cookies) see "No account needed".
 3. One `security definer` function **`redeem_share_link(token)`** validates the token and upserts
    **`song_access (song_id, user_id, role, share_link_id, created_at)`** with `role = 'client'`.
 4. Everything else (reading the song and versions, reading and adding comments) goes through
@@ -66,3 +70,4 @@ permission system that grows into that, not two.
 | 2026-11-20 | Hardened after the PR #52 review: revoking is final (un-revoke refused); token format enforced (`^[A-Za-z0-9_-]{32,64}$`); grant check also matches link↔song; share URLs from `NEXT_PUBLIC_SITE_URL`; revoke text admits already-open audio lasts up to an hour; tests for grant privacy, cross-studio revoke, and versions cut off on revoke/expiry (#43). | Independent review found un-revoke possible (confirmed live) and several untested claims; no exploitable high/medium issue. |
 | 2026-11-21 | Client page built (#44): a **click to listen** instead of signing in on page load; client view at `/listen/[songId]` (RLS-only, revoked → 404); anonymous users are not engineers (proxy and `getCurrentUser` send them to `/login`; no studio → 404, not 500). | Signing in on load would let link-preview bots create anonymous users and use up the rate limit. Engineer pages must never treat a share-link session as an engineer. |
 | 2026-11-21 | Fixed after the bot review of PR #57: anonymous sign-in moved **from the server to the browser** (server-side calls all counted against one shared limit for Vercel's IP, and the action signed in before checking the token, so anyone could exhaust it); everyone clicks Listen (loading the page used to redeem for existing sessions, a write on GET). | The new review bot found it (#54); confirmed by reading the code. |
+| 2026-11-21 | Share page copy depends on who is visiting (read-only): own link → "This is your share link" + preview + back to song (revoked → says so, no preview); other signed-in account → "Signed in as …, the mix will be added to this account"; anonymous/no session → "No account needed". A signed-in engineer's grant stays on their real account (no "listen as guest"). | Ryan: a real account shouldn't be told "no account needed". Grants on real accounts are simpler and work on every device. |

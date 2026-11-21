@@ -48,6 +48,7 @@ test("a client opens the link, clicks Listen and the mix plays, with no account"
   const anonBefore = await adminAnonymousUserCount();
   await client.goto(sharePath);
   await expect(client.getByRole("heading", { name: "A mix has been shared with you" })).toBeVisible();
+  await expect(client.getByText("No account needed. Listen in your browser.")).toBeVisible();
   await expect(client.getByText(title)).toHaveCount(0); // nothing about the song before redeeming
   expect(await adminAnonymousUserCount()).toBe(anonBefore); // viewing the link creates no user
 
@@ -115,13 +116,25 @@ test("an anonymous client can't use the engineer pages", async ({ page, browser 
   await ctx.close();
 });
 
-test("the engineer opening their own link sees the client view", async ({ page }) => {
+test("the engineer opening their own link is told so, and can preview the client view", async ({ page }) => {
   const title = `Own link ${Date.now()}`;
-  const { sharePath } = await engineerShares(page, title);
+  const { songUrl, sharePath } = await engineerShares(page, title);
   await page.goto(sharePath);
-  await page.getByRole("button", { name: "Listen" }).click(); // signed in already: no anonymous user needed
+  await expect(page.getByRole("heading", { name: "This is your share link" })).toBeVisible();
+  await expect(page.getByText("No account needed")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Back to song" })).toHaveAttribute("href", new URL(songUrl).pathname);
+  await page.getByRole("button", { name: "Preview as client" }).click(); // signed in already: no anonymous user
   await expect(page).toHaveURL(/\/listen\//);
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
+
+  // After revoking, the page says what the client now sees, and offers no preview.
+  await page.goto(songUrl);
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("region", { name: "Share with client" }).getByRole("button", { name: "Revoke" }).click();
+  await expect(page.getByRole("button", { name: "Create share link" })).toBeVisible();
+  await page.goto(sharePath);
+  await expect(page.getByText("You revoked it")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Preview as client" })).toHaveCount(0);
 });
 
 test("loading the link has no side effects, even for someone already signed in", async ({ page, browser }) => {
@@ -133,6 +146,16 @@ test("loading the link has no side effects, even for someone already signed in",
   await otherPage.goto(sharePath);
   await expect(otherPage.getByRole("button", { name: "Listen" })).toBeVisible();
   expect(await adminGrantCount(songId)).toBe(0); // nothing redeemed just by loading
+  // Copy for a real account: not "no account needed", and not "your share link" (it isn't theirs).
+  await expect(otherPage.getByText("Signed in as dev2@example.test")).toBeVisible();
+  await expect(otherPage.getByText("No account needed")).toHaveCount(0);
+  await expect(otherPage.getByRole("heading", { name: "This is your share link" })).toHaveCount(0);
+  // Clicking adds the mix to THIS account (no anonymous user), and they can listen.
+  const anon = await adminAnonymousUserCount();
+  await otherPage.getByRole("button", { name: "Listen" }).click();
+  await expect(otherPage).toHaveURL(/\/listen\//);
+  expect(await adminGrantCount(songId)).toBe(1);
+  expect(await adminAnonymousUserCount()).toBe(anon);
   await other.close();
 });
 

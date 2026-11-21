@@ -300,3 +300,7 @@ lined up (#2 closed).
   reach the server" and keeps it. New test fails `/auth/v1/user` once (network, then 500) and checks no new
   anonymous user is made (mutation-checked: fails on the previous code). Lesson: a fix that adds a network call
   adds a new failure mode; test the failure, not just the happy recovery.
+- **Share page copy by visitor (Ryan's ask):** reviewed the flow for each visitor; a signed-in engineer was
+  told "No account needed". Now the page reads (never writes) the session: your own link → "This is your share
+  link" + preview + back to song; another account → "Signed in as …, the mix will be added to this account";
+  anonymous → unchanged. Decided: an engineer's grant stays on their real account (no guest option).
