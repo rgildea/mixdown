@@ -10,11 +10,11 @@ export function EmptyState({
 }: { title: ReactNode; description?: ReactNode } & Omit<ComponentProps<"section">, "title">) {
   return (
     <section
-      className={cx("rounded-card border border-dashed border-line-strong p-6 text-center", className)}
+      className={cx("rounded-card border border-dashed border-line-strong px-6 py-8 text-center", className)}
       {...props}
     >
       <p className="font-medium">{title}</p>
-      {description && <p className="text-sm text-subtle">{description}</p>}
+      {description && <p className="mt-1 text-sm text-subtle">{description}</p>}
     </section>
   );
 }

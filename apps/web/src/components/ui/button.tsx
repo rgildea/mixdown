@@ -2,31 +2,37 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import { cx } from "./cx";
 
-export type ButtonVariant = "primary" | "link" | "danger-link";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "link" | "danger-link";
 export type ButtonSize = "sm" | "md" | "lg";
 
-const base = "cursor-pointer disabled:cursor-default disabled:opacity-50";
+const base =
+  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap transition-colors duration-[120ms] disabled:cursor-default disabled:opacity-50";
 
+// `primary` is the one amber action per view. `secondary` (the default) is most buttons; `ghost` is for toolbars.
 const variants: Record<ButtonVariant, string> = {
-  primary: "rounded-control bg-primary text-on-primary hover:bg-primary-hover",
-  link: "underline underline-offset-4 hover:text-foreground",
+  primary: "rounded-control bg-primary font-medium text-on-primary hover:bg-primary-hover",
+  secondary:
+    "rounded-control bg-surface font-medium text-foreground ring-1 ring-line-strong ring-inset hover:bg-surface-raised hover:ring-line-active",
+  ghost: "rounded-control font-medium text-muted hover:bg-surface-raised hover:text-foreground",
+  link: "text-muted underline decoration-line-active underline-offset-4 hover:text-foreground",
   "danger-link": "text-danger underline underline-offset-4",
 };
 
-// Sizes apply to `primary` only; link variants take the surrounding text size (`sm` sets text-sm).
+// Sizes apply to filled variants; link variants take the surrounding text size (`sm` sets text-sm).
 const sizes: Record<ButtonSize, string> = {
-  sm: "px-4 py-2 text-sm",
-  md: "px-4 py-2",
-  lg: "px-6 py-3",
+  sm: "h-control px-4 text-sm",
+  md: "h-control px-4",
+  lg: "h-control-lg px-6 font-semibold",
 };
 
 /** Class names for a button-styled element; use when the element isn't a <button> or <Link>. */
 export function buttonClasses({
-  variant = "primary",
+  variant = "secondary",
   size = "sm",
   className,
 }: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
-  const sizing = variant === "primary" ? sizes[size] : size === "sm" ? "text-sm" : undefined;
+  const isLink = variant === "link" || variant === "danger-link";
+  const sizing = isLink ? (size === "sm" ? "text-sm" : undefined) : sizes[size];
   return cx(base, variants[variant], sizing, className);
 }
 

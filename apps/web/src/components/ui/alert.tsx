@@ -10,7 +10,7 @@ const tones = {
 export function Alert({ tone, children }: { tone: keyof typeof tones; children: ReactNode }) {
   const t = tones[tone];
   return (
-    <p className={cx("rounded-control p-4 text-sm", t.className)} role={t.role}>
+    <p className={cx("rounded-control px-4 py-3 text-sm", t.className)} role={t.role}>
       {children}
     </p>
   );

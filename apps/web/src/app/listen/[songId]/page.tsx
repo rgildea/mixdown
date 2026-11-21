@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { presignPlayback } from "@/lib/r2";
 import { MixCard } from "@/components/mix-card";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, Wordmark } from "@/components/ui";
 
 export const metadata: Metadata = { robots: { index: false } };
 
@@ -31,10 +31,10 @@ export default async function ListenPage({ params }: PageProps<"/listen/[songId]
   const audioUrl = mix ? await presignPlayback(mix.object_key) : null;
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-10">
-      <p className="text-sm font-semibold tracking-tight text-subtle">Mixdown</p>
+    <main className="mx-auto flex w-full max-w-shell flex-col gap-6 px-6 py-10">
+      <Wordmark />
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{song.title}</h1>
+        <h1 className="text-title font-semibold">{song.title}</h1>
         {song.client_name && <p className="text-sm text-subtle">{song.client_name}</p>}
       </div>
       {mix && audioUrl ? (

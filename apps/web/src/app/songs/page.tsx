@@ -18,7 +18,7 @@ export default async function SongsPage() {
 
   return (
     <main className="flex flex-col gap-6">
-      <PageHeader title="Songs" actions={<ButtonLink href="/songs/new">New song</ButtonLink>} />
+      <PageHeader title="Songs" actions={<ButtonLink href="/songs/new" variant="primary">New song</ButtonLink>} />
 
       {songs.length === 0 ? (
         <p className="text-muted">No songs yet. Create one to upload your first mix.</p>

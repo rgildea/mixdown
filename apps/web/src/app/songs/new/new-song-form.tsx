@@ -155,7 +155,7 @@ export function NewSongForm() {
         <Field label="Mix" htmlFor="file" error={fileError}>
           <div
             className={cx(
-              "flex flex-col gap-2 rounded-card border-2 border-dashed p-4",
+              "flex flex-col gap-2 rounded-card border border-dashed p-4",
               fileError ? "border-danger-line bg-danger-surface" : picked ? "border-line-active bg-surface" : "border-line-strong",
             )}
           >
@@ -173,7 +173,7 @@ export function NewSongForm() {
                 setPicked(f && check?.ok ? { name: f.name, size: f.size } : null);
                 if (f && check?.ok) setFile(f); // after an error, a newly picked file is what "Try again" uploads
               }}
-              className="text-sm text-muted file:mr-3 file:cursor-pointer file:rounded-control file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-on-primary hover:file:bg-primary-hover"
+              className="text-sm text-muted file:mr-3 file:cursor-pointer file:rounded-control file:border-0 file:h-control file:bg-surface-raised file:px-4 file:text-sm file:font-medium file:text-foreground file:ring-1 file:ring-line-strong file:ring-inset hover:file:ring-line-active"
             />
             <p id="file-hint" className="text-xs text-subtle">
               {picked ? `Ready to upload: ${picked.name} (${formatBytes(picked.size)})` : "WAV or MP3, up to 500 MB"}
@@ -188,7 +188,7 @@ export function NewSongForm() {
             aria-label="Upload progress"
             value={phase.loaded}
             max={phase.total}
-            className="h-2 w-full overflow-hidden rounded [&::-webkit-progress-bar]:bg-line [&::-webkit-progress-value]:bg-primary"
+            className="h-1.5 w-full appearance-none overflow-hidden rounded-marker bg-line [&::-moz-progress-bar]:bg-primary [&::-webkit-progress-bar]:bg-line [&::-webkit-progress-value]:bg-primary"
           />
           <p className="text-sm text-muted">
             Uploading… {formatBytes(phase.loaded)} of {formatBytes(phase.total)} (
@@ -204,7 +204,7 @@ export function NewSongForm() {
           {songId && (
             <div className="flex items-center gap-3">
               {phase.retryable && file && (
-                <Button onClick={() => upload(songId, file)} className="w-fit">
+                <Button variant="primary" onClick={() => upload(songId, file)} className="w-fit">
                   Try again
                 </Button>
               )}
@@ -217,7 +217,7 @@ export function NewSongForm() {
       )}
 
       {songId === null && (
-        <Button type="submit" size="md" disabled={busy || fileError !== null} className="w-fit">
+        <Button type="submit" variant="primary" size="md" disabled={busy || fileError !== null} className="w-fit">
           {phase.name === "saving" ? "Creating…" : "Create song and upload"}
         </Button>
       )}

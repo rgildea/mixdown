@@ -34,7 +34,7 @@ export function SharePanel({ songId, url }: { songId: string; url: string | null
   return (
     <Card aria-label="Share with client">
       <div>
-        <h2 className="font-medium">Share with your client</h2>
+        <h2 className="text-heading font-semibold">Share with your client</h2>
         <p className="text-sm text-subtle">
           Anyone with this link can listen and leave comments, without an account. Revoking it cuts off
           access (already-open audio can keep playing for up to an hour).
@@ -66,7 +66,7 @@ export function SharePanel({ songId, url }: { songId: string; url: string | null
           </div>
         </>
       ) : (
-        <Button disabled={pending} onClick={() => run(() => createShareLink(songId))} className="w-fit">
+        <Button variant="primary" disabled={pending} onClick={() => run(() => createShareLink(songId))} className="w-fit">
           {pending ? "Creating…" : "Create share link"}
         </Button>
       )}

@@ -51,7 +51,7 @@ export function OpenButton({ token, label = "Listen" }: { token: string; label?:
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <Button size="lg" disabled={pending} onClick={open}>
+      <Button variant="primary" size="lg" disabled={pending} onClick={open}>
         {pending ? "Opening…" : label}
       </Button>
       {error && <ErrorText>{error}</ErrorText>}

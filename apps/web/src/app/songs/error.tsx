@@ -15,7 +15,7 @@ export default function SongsError({ error, retry }: { error: unknown; retry: ()
       <PageHeader title="Something went wrong" />
       <p className="text-muted">This page couldn&apos;t load. It&apos;s probably temporary.</p>
       <div className="flex items-center gap-4">
-        <Button onClick={() => retry()}>Try again</Button>
+        <Button variant="primary" onClick={() => retry()}>Try again</Button>
         <ButtonLink href="/songs" variant="link">
           Back to songs
         </ButtonLink>
