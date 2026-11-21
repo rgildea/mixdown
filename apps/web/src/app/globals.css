@@ -167,3 +167,9 @@ body {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+
+/* The comment composer's textarea sits in a bordered box that shows focus itself (focus-within), so the
+   textarea skips the ring. Unlayered like the rule above: a Tailwind utility (layered) can't override it. */
+textarea[data-composer]:focus-visible {
+  outline: none;
+}

@@ -213,7 +213,8 @@ export function MixReview({ header, songId, mix, audioUrl, comments: initial, de
                   e.currentTarget.blur();
                 }
               }}
-              className="resize-y bg-transparent text-foreground placeholder:text-faint focus-visible:outline-none"
+              data-composer
+              className="resize-y bg-transparent text-foreground placeholder:text-faint"
             />
           </div>
 
