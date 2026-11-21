@@ -317,4 +317,4 @@ lined up (#2 closed).
   (same `Field` spacing as the new-song form). Songs list and song page are pixel-identical before and after.
 - **AI got wrong:** first draft mapped `--radius-control: var(--radius-control)` inside `@theme inline`, a
   self-reference; radii now live in a plain `@theme` block.
-- **Not done:** dark mode (later issue); PR #57's new `/s` and `/listen` pages move onto the components after it merges.
+- **After #57 merged:** its `/s` and `/listen` pages moved onto the components too. Not done: dark mode (later issue).

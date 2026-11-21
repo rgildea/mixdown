@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { isAuthApiError, isAuthSessionMissingError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { Button, ErrorText } from "@/components/ui";
 import { redeemSharedMix } from "./actions";
 
 export function OpenButton({ token, label = "Listen" }: { token: string; label?: string }) {
@@ -50,19 +51,10 @@ export function OpenButton({ token, label = "Listen" }: { token: string; label?:
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <button
-        type="button"
-        disabled={pending}
-        onClick={open}
-        className="rounded-md bg-zinc-900 px-6 py-3 text-white disabled:opacity-50"
-      >
+      <Button size="lg" disabled={pending} onClick={open}>
         {pending ? "Opening…" : label}
-      </button>
-      {error && (
-        <p className="text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      )}
+      </Button>
+      {error && <ErrorText>{error}</ErrorText>}
     </div>
   );
 }
