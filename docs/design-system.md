@@ -63,6 +63,7 @@ check the theme.
 | `waveform-played` | `#ece7de` | `#1a1815` | Waveform bars left of the playhead |
 | `waveform-rest` | `#4a463f` | `#b3ab9e` | Waveform bars not yet played |
 | `playhead` | `#e8a54b` | `#b86e16` | The playhead line |
+| `marker` | `#e8a54b` | `#b86e16` | A comment's pin on the waveform rail (solid saved, hollow draft) |
 | `danger` | `#f08473` | `#b3261e` | Inline errors, destructive links |
 | `danger-strong` | `#f7a99c` | `#8c1d17` | Text on `danger-surface` |
 | `danger-surface` | `#2c1714` | `#fbeae7` | Error alerts, drop zone with a bad file |
@@ -70,7 +71,7 @@ check the theme.
 | `success` | `#9fd4b3` | `#245a3c` | Text on `success-surface` |
 | `success-surface` | `#15241b` | `#e6f2ea` | Success alerts (link sent, link copied) |
 
-The design system also defines tokens for features that don't exist yet (`marker`, `marker-resolved`,
+The design system also defines tokens for features that don't exist yet (`marker-resolved`,
 `waveform-hover`, `waveform-range`, `approved`, `approved-surface`, `approved-line`). Add each to
 `globals.css` with the story that first uses it, with the values from the design system.
 
@@ -155,6 +156,24 @@ played bars are `waveform-played`, unplayed `waveform-rest`, the playhead is a 2
 Flat bars, no gradients or glows, and don't colour bars per section or comment. wavesurfer.js draws
 on a canvas, so the player reads token values with `getComputedStyle` when it mounts.
 
+**Comment marks on the waveform** (#46). Three marks, told apart by shape rather than a new colour:
+- **Playhead:** a solid 2px `playhead` line across the bars. We draw it ourselves (wavesurfer's cursor is off) so
+  it layers above the draft line.
+- **Saved comment:** a solid 10×14 `marker` pin on a rail above the well (never on the bars). The selected
+  comment's pin turns `foreground` and lifts 2px.
+- **Draft comment:** a hollow `marker` pin on the rail with its timecode beside it (mono, `accent-text`), plus a
+  1px dashed `foreground` line through the whole well. On the same time as the playhead, the playhead covers the
+  bars and the dashes still show in the well's padding; the hollow pin is on the rail either way. Hovering the
+  composer's time pill turns the draft pin `foreground` and lifts it.
+
+**Comment composer and list** (`src/components/mix-review.tsx`). The composer is one bordered box (focus ring on the
+box, not the textarea). Focusing it starts a draft at the playhead and shows a segmented time pill (`1:23 | ×`,
+mono `accent-text` on `accent-surface`, `accent-line` ring); × makes it a whole-mix comment. Only seeks move the
+draft's time, never playback; clicking the waveform or a comment seeks and never starts playback. "Post comment"
+is `primary` on the listen page (the view's main action) and `secondary` on the song page. ⌘/Ctrl+Enter posts, Esc
+cancels. In the list, a comment's time is a seek button in the same pill style; whole-mix comments show a
+`surface-raised` "Whole mix" tag and come first. The selected comment gets `accent-surface`.
+
 Don't restyle a component by passing a conflicting utility in `className` (e.g. a second text colour):
 `cx()` joins classes without merging them, so Tailwind's CSS order decides which wins. Add a variant or
 prop instead; `className` is for layout (`w-fit`, margins).
@@ -167,10 +186,10 @@ Components are plain Tailwind and React, with no component library (PROJECT.md).
 - **Login**: `text-title`, `Field` + `Input`, a primary `Button`; `Alert` for the sent link.
 - **Songs** (`/songs`): `PageHeader` with a primary "New song", then rows on `line` dividers.
 - **New song**: `Field`s, the dashed drop zone, the progress bar, one primary submit.
-- **Song** (`/songs/[id]`): `PageHeader`, the mix `Card` with the waveform player, then the share
+- **Song** (`/songs/[id]`): `PageHeader`, the mix `Card` (waveform player + composer), the Comments `Card`, then the share
   `Card` (link in a read-only mono `Input`, secondary Copy link, `danger-link` Revoke).
 - **Share redeem** (`/s/[token]`): centered `text-title`, one `muted` line, a `lg` primary "Listen".
-- **Listen** (`/listen/[songId]`): `Wordmark`, title, the mix `Card`.
+- **Listen** (`/listen/[songId]`): `Wordmark`, title, the mix `Card` (with a primary "Post comment"), the Comments `Card`.
 
 ## Changing the system
 

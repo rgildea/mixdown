@@ -367,3 +367,23 @@ lined up (#2 closed).
   their tokens get added with the story that first uses them. Light/dark follows the OS (no toggle).
 - Not verified: Safari/Firefox; the native `<audio>` controls follow `color-scheme` but still look like the browser's.
   The waveform reads its colours once at mount, so switching OS theme mid-page leaves it in the old colours until reload.
+
+## W2 S5: Timestamped comments (#46)
+- **Asked:** next story after #28. Proposal first; Ryan then shaped the UX in the thread before any code.
+- **Decided (Ryan):** focusing the composer captures the playhead as a time pill; playback never moves it, only a
+  seek does (intentional, and a seek re-adds a cleared time, so no "Add time" button); the pill's × makes a whole-mix
+  comment; clicking the waveform while paused seeks and never resumes playback; typing never pauses playback. The
+  draft gets its own mark on the waveform that coexists with the playhead at the same time.
+- **Decided (AI, accepted in the proposal):** engineers can comment too; everyone picks a display name (no email shown to
+  clients); no Realtime (refresh); no edit/delete yet.
+- **Built:** `comments` table + RLS via `can_access_song`, column-limited inserts, composite FK version↔song,
+  `addComment` Server Action, `MixReview` (composer + list) on both pages, pins on a rail above the waveform, a hollow
+  draft pin + dashed line under our own playhead (wavesurfer's cursor is off so we control the layering).
+- **Tests:** pgTAP 22 for comments, mutation-checked with 8 loosened variants (read policy open, insert check open,
+  author check dropped + all columns granted, update/delete granted, anon granted, plain FK…); each fails at least one
+  test. 2 E2E: client comments at 1:23 → engineer sees it and clicking seeks there without playing; the draft rules
+  (seek moves it, × clears it, seek re-adds it, Esc cancels, whole-mix comment via ⌘/Ctrl+Enter).
+- **AI got wrong (caught before commit):** the first draft put the dashed draft line and the playhead at the same height,
+  so the 2px playhead hid the 1px line completely; now the playhead spans only the bars. The textarea showed the
+  global focus ring inside the composer's own focus border.
+- Not verified: Safari/Firefox, a real phone, Realtime (not built), screen-reader pass beyond labels.
