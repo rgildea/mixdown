@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { presignPlayback } from "@/lib/r2";
 import { MixCard } from "@/components/mix-card";
+import { displayName, getComments } from "@/lib/comments";
 import { EmptyState, Wordmark } from "@/components/ui";
 
 export const metadata: Metadata = { robots: { index: false } };
@@ -21,7 +22,7 @@ export default async function ListenPage({ params }: PageProps<"/listen/[songId]
   const supabase = await createClient();
   const { data: song, error } = await supabase
     .from("songs")
-    .select("id, title, client_name, mix_versions (version_number, object_key, original_filename, size_bytes, duration_ms, peaks)")
+    .select("id, title, client_name, mix_versions (id, version_number, object_key, original_filename, size_bytes, duration_ms, peaks)")
     .eq("id", songId)
     .maybeSingle();
   if (error) throw error;
@@ -29,6 +30,7 @@ export default async function ListenPage({ params }: PageProps<"/listen/[songId]
 
   const mix = song.mix_versions.toSorted((a, b) => b.version_number - a.version_number)[0] ?? null;
   const audioUrl = mix ? await presignPlayback(mix.object_key) : null;
+  const comments = mix ? await getComments(mix.id) : [];
 
   return (
     <main className="mx-auto flex w-full max-w-shell flex-col gap-6 px-6 py-10">
@@ -38,7 +40,14 @@ export default async function ListenPage({ params }: PageProps<"/listen/[songId]
         {song.client_name && <p className="text-sm text-subtle">{song.client_name}</p>}
       </div>
       {mix && audioUrl ? (
-        <MixCard mix={mix} audioUrl={audioUrl} />
+        <MixCard
+          songId={song.id}
+          mix={mix}
+          audioUrl={audioUrl}
+          comments={comments}
+          defaultName={displayName(user)}
+          postVariant="primary"
+        />
       ) : (
         <EmptyState aria-label="Mix" title="No mix has been uploaded for this song yet." />
       )}

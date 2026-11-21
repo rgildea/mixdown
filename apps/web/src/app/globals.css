@@ -36,6 +36,7 @@
   --waveform-played: #ece7de; /* bars left of the playhead */
   --waveform-rest: #4a463f; /* bars not yet played */
   --playhead: #e8a54b; /* the playhead line (3:1 on the well) */
+  --marker: #e8a54b; /* a comment's pin on the waveform rail */
 
   /* Feedback */
   --danger: #f08473; /* inline errors, destructive links */
@@ -76,6 +77,7 @@
     --waveform-played: #1a1815;
     --waveform-rest: #b3ab9e;
     --playhead: #b86e16;
+    --marker: #b86e16;
 
     --danger: #b3261e;
     --danger-strong: #8c1d17;
@@ -110,6 +112,7 @@
   --color-waveform-played: var(--waveform-played);
   --color-waveform-rest: var(--waveform-rest);
   --color-playhead: var(--playhead);
+  --color-marker: var(--marker);
   --color-danger: var(--danger);
   --color-danger-strong: var(--danger-strong);
   --color-danger-surface: var(--danger-surface);
@@ -163,4 +166,10 @@ body {
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* The comment composer's textarea sits in a bordered box that shows focus itself (focus-within), so the
+   textarea skips the ring. Unlayered like the rule above: a Tailwind utility (layered) can't override it. */
+textarea[data-composer]:focus-visible {
+  outline: none;
 }

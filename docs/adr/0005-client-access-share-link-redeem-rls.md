@@ -32,10 +32,16 @@ permission system that grows into that, not two.
    revoking a link cuts off everyone who used it. The `songs` read policy checks the row's own
    `workspace_id` instead of re-querying `songs` (a re-query can't see a row inserted in the same
    statement, which broke `insert … returning`). Writes stay members-only.
-5. The client is asked for a display name on first comment (stored on their anonymous user's
-   metadata / a cookie). Comments store `author_user_id` + `author_name`.
+5. **Comments** (#46): `comments (song_id, version_id, at_ms, body, author_user_id, author_name, created_at)`.
+   Anyone who passes `can_access_song(song_id)` reads all comments on the song and adds their own (engineers too);
+   no edits or deletes yet. Inserts may set only `song_id, version_id, at_ms, body, author_name` (column grants), so
+   the author is always `auth.uid()` and `created_at` can't be backdated; a composite FK keeps the version on its
+   song. `at_ms` null = a comment on the whole mix. Comments outlive their author's account (`author_user_id` is set
+   null when the user is deleted, e.g. an anonymous-user cleanup). Everyone, engineers included, gives a display name on their
+   first comment (saved in user metadata, pre-filled after), so an engineer's email is never shown to a client.
 6. Audio for clients uses the same presigned R2 GET path (ADR 0003), issued after an RLS-checked read.
-7. Live comments can use Supabase Realtime with RLS, since anonymous users are `authenticated`.
+7. Live comments can use Supabase Realtime with RLS, since anonymous users are `authenticated`. Not in v1: the
+   engineer refreshes to see new comments (first item on the Week 2 cut list).
 
 ## Alternatives considered
 - **Token + per-capability `security definer` functions:** simplest in Week 2, but every new client
@@ -71,3 +77,5 @@ permission system that grows into that, not two.
 | 2026-11-21 | Client page built (#44): a **click to listen** instead of signing in on page load; client view at `/listen/[songId]` (RLS-only, revoked → 404); anonymous users are not engineers (proxy and `getCurrentUser` send them to `/login`; no studio → 404, not 500). | Signing in on load would let link-preview bots create anonymous users and use up the rate limit. Engineer pages must never treat a share-link session as an engineer. |
 | 2026-11-21 | Fixed after the bot review of PR #57: anonymous sign-in moved **from the server to the browser** (server-side calls all counted against one shared limit for Vercel's IP, and the action signed in before checking the token, so anyone could exhaust it); everyone clicks Listen (loading the page used to redeem for existing sessions, a write on GET). | The new review bot found it (#54); confirmed by reading the code. |
 | 2026-11-21 | Share page copy depends on who is visiting (read-only): own link → "This is your share link" + preview + back to song (revoked → says so, no preview); other signed-in account → "Signed in as …, the mix will be added to this account"; anonymous/no session → "No account needed". A signed-in engineer's grant stays on their real account (no "listen as guest"). | Ryan: a real account shouldn't be told "no account needed". Grants on real accounts are simpler and work on every device. |
+| 2026-11-21 | Comments built (#46): engineers can comment too; whole-mix comments (`at_ms` null); column-limited inserts; composite FK version↔song; display name for everyone (in user metadata, not a cookie); no Realtime yet. | Ryan's UX calls (a cleared timestamp makes a whole-mix comment); a name prompt for engineers keeps their email away from clients; Realtime was first on the cut list. |
+| 2026-11-21 | Fixed after the bot review of PR #68: deleting a user keeps their comments (`on delete set null`, was cascade); the composer always shows the name it posts as, with Change name. | A cleanup job for anonymous users (anticipated in the E2E helpers) would have silently erased client feedback. |
