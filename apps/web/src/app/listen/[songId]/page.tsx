@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { presignPlayback } from "@/lib/r2";
-import { formatBytes } from "@/lib/upload-rules";
-import { Card, EmptyState } from "@/components/ui";
+import { MixCard } from "@/components/mix-card";
+import { EmptyState } from "@/components/ui";
 
 export const metadata: Metadata = { robots: { index: false } };
 
@@ -21,7 +21,7 @@ export default async function ListenPage({ params }: PageProps<"/listen/[songId]
   const supabase = await createClient();
   const { data: song, error } = await supabase
     .from("songs")
-    .select("id, title, client_name, mix_versions (version_number, object_key, original_filename, size_bytes)")
+    .select("id, title, client_name, mix_versions (version_number, object_key, original_filename, size_bytes, duration_ms, peaks)")
     .eq("id", songId)
     .maybeSingle();
   if (error) throw error;
@@ -38,17 +38,7 @@ export default async function ListenPage({ params }: PageProps<"/listen/[songId]
         {song.client_name && <p className="text-sm text-subtle">{song.client_name}</p>}
       </div>
       {mix && audioUrl ? (
-        <Card aria-label="Mix">
-          <div className="flex items-baseline justify-between gap-4">
-            <p className="truncate font-medium">{mix.original_filename}</p>
-            <p className="shrink-0 text-sm text-subtle">
-              v{mix.version_number} · {formatBytes(mix.size_bytes)}
-            </p>
-          </div>
-          <audio controls preload="metadata" src={audioUrl} className="w-full" aria-label={`Play ${mix.original_filename}`}>
-            Your browser can&apos;t play this file.
-          </audio>
-        </Card>
+        <MixCard mix={mix} audioUrl={audioUrl} />
       ) : (
         <EmptyState aria-label="Mix" title="No mix has been uploaded for this song yet." />
       )}

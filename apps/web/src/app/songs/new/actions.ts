@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace";
 import { checkUpload } from "@/lib/upload-rules";
 import { presignUpload, statObject } from "@/lib/r2";
+import { checkWaveform } from "@/lib/waveform-rules";
 
 // Server Actions are public endpoints and their arguments are untrusted (anyone can POST them).
 // Each one authorizes itself and validates everything it is given. Upload flow: ADR 0003.
@@ -77,6 +78,8 @@ export async function finishUpload(input: {
   key: string;
   filename: string;
   size: number;
+  /** Measured by the browser from the local file (ADR 0010). Optional: absent if it couldn't scan. */
+  waveform?: unknown;
 }): Promise<Result<object>> {
   const check = checkUpload({ name: input?.filename, size: input?.size });
   if (!check.ok) return fail(check.error);
@@ -102,6 +105,10 @@ export async function finishUpload(input: {
     return fail("The uploaded file doesn't match. Choose the file again.", true);
   }
 
+  // Cosmetic and engineer-supplied: invalid values are dropped (no waveform), not a failed upload.
+  const waveform = input.waveform == null ? null : checkWaveform(input.waveform);
+  if (input.waveform != null && !waveform) console.warn("finishUpload: ignoring an invalid waveform", { key: input.key });
+
   const supabase = await createClient();
   const { error } = await supabase.from("mix_versions").insert({
     song_id: song.id,
@@ -110,6 +117,8 @@ export async function finishUpload(input: {
     original_filename: input.filename.slice(0, 255),
     mime_type: check.contentType,
     size_bytes: input.size,
+    duration_ms: waveform?.durationMs ?? null,
+    peaks: waveform?.peaks ?? null,
   });
 
   if (error?.code === "23505") {

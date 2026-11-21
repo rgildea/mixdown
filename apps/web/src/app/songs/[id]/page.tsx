@@ -2,11 +2,11 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace";
 import { presignPlayback } from "@/lib/r2";
-import { formatBytes } from "@/lib/upload-rules";
+import { MixCard } from "@/components/mix-card";
 import { LocalDate } from "@/components/local-date";
 import { SharePanel } from "./share-panel";
 import { siteUrl } from "@/lib/site-url";
-import { Card, EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -22,7 +22,7 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
   const supabase = await createClient();
   const { data: song, error } = await supabase
     .from("songs")
-    .select("id, title, client_name, created_at, mix_versions (version_number, object_key, original_filename, size_bytes, mime_type)")
+    .select("id, title, client_name, created_at, mix_versions (version_number, object_key, original_filename, size_bytes, duration_ms, peaks)")
     .eq("id", id)
     .eq("workspace_id", workspace.id)
     .maybeSingle();
@@ -59,17 +59,7 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
       />
 
       {mix && audioUrl ? (
-        <Card aria-label="Mix">
-          <div className="flex items-baseline justify-between gap-4">
-            <p className="truncate font-medium">{mix.original_filename}</p>
-            <p className="shrink-0 text-sm text-subtle">
-              v{mix.version_number} · {formatBytes(mix.size_bytes)}
-            </p>
-          </div>
-          <audio controls preload="metadata" src={audioUrl} className="w-full" aria-label={`Play ${mix.original_filename}`}>
-            Your browser can&apos;t play this file.
-          </audio>
-        </Card>
+        <MixCard mix={mix} audioUrl={audioUrl} />
       ) : (
         <EmptyState
           aria-label="Mix"

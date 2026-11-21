@@ -22,3 +22,4 @@ supersedes the old one, which keeps its changelog.
 | [0007](0007-github-issues-for-planning.md) | GitHub Issues + milestones for planning; Later list as a label | Accepted (reviewed) |
 | [0008](0008-cache-components-off.md) | Cache Components off (nearly every page is per-request) | Accepted (reviewed) |
 | [0009](0009-local-first-development.md) | Local-first dev (Supabase CLI + Mailpit), token_hash magic links, custom SMTP | Accepted (reviewed) |
+| [0010](0010-waveform-peaks-computed-at-upload.md) | Waveform peaks + duration computed in the browser at upload, stored on the mix version | Accepted |
