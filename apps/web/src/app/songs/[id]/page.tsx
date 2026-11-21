@@ -5,6 +5,7 @@ import { getCurrentWorkspace } from "@/lib/workspace";
 import { presignPlayback } from "@/lib/r2";
 import { formatBytes } from "@/lib/upload-rules";
 import { LocalDate } from "@/components/local-date";
+import { SharePanel } from "./share-panel";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -31,6 +32,18 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
   const mix = song.mix_versions.toSorted((a, b) => b.version_number - a.version_number)[0] ?? null;
   // A fresh 1-hour signed URL on every request (ADR 0003): refreshing the page restores playback.
   const audioUrl = mix ? await presignPlayback(mix.object_key) : null;
+
+  // The active share link, if any (readable only by studio members, via RLS).
+  const { data: link } = await supabase
+    .from("share_links")
+    .select("token")
+    .eq("song_id", song.id)
+    .is("revoked_at", null)
+    .maybeSingle();
+  // Built from the configured site URL, not request headers: a link copied on a (login-protected)
+  // Vercel preview still points at production, and no proxy header can change the domain.
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const shareUrl = link ? `${siteUrl}/s/${link.token}` : null;
 
   return (
     <main className="flex flex-col gap-6">
@@ -63,6 +76,8 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
           <p className="text-sm text-zinc-500">The upload for this song didn&apos;t finish.</p>
         </section>
       )}
+
+      <SharePanel songId={song.id} url={shareUrl} />
     </main>
   );
 }

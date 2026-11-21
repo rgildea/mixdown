@@ -63,6 +63,9 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
   isn't. Test anything "opened on another device" on production or while logged into Vercel.
 - The Claude Code Review action reviews a PR **once**: when its "## Code review" comment already exists,
   later runs skip in ~2 turns. To re-review after fixes, delete that comment, then close and reopen the PR.
+- RLS select policies must not look up the SAME table by id (e.g. a helper doing `select … from songs where
+  id = …` in the songs policy): the lookup can't see a row inserted in the same statement, so
+  `insert … returning` fails. Check the row's own columns instead. pgTAP covers this for `songs`.
 - Supabase Free plan pauses the project after 7 days idle.
 - Pages must authorize themselves (`getCurrentUser()` / `getCurrentWorkspace()`); the `/songs`
   layout's check does not protect child pages. Server Actions too: they're public endpoints.
