@@ -83,6 +83,48 @@ is the 15-minute check that anonymous sign-ins work with signups disabled.
 **Also for Week 2:** the 1-hour old-repo lessons review (#3), still open. The Week 4 client project is
 lined up (#2 closed).
 
+### Week 2 check-in (Core loop), 2026-11-21 (DRAFT: Ryan's blanks marked TODO)
+**1. What shipped?** https://mixdown-three.vercel.app/
+- **The v1 loop:** an engineer makes a share link; the client opens it with no account (one click on
+  **Listen** → anonymous session → grant), sees a waveform and leaves comments pinned to timestamps or on the
+  whole mix; the engineer sees them on the song page, and clicking a pin seeks there.
+- Invite-only moved into the database (`private.invites` + `guard_auth_users`, fails closed), so signups and
+  anonymous sign-ins could be turned on safely. Invite = allowlist + account in one step.
+- Share links: one active per song, re-copyable, revocable; revoking cuts the client off from audio and comments.
+- Waveform from 2,000 peaks measured in the engineer's browser during upload (ADR 0010): shows instantly, and
+  the audio still streams by range requests. A 300 MB WAV uploads with no visible jank.
+- The "Control room" design system: dark-first with an equal light theme, tokens and our own components.
+- A review bot we can trust: project-specific prompt, Opus, every push re-reviewed, canary-tested on #55
+  (caught 3 of 3 planted bugs).
+- Tests: pgTAP 19 → 118, Playwright 30 → 62. Every new policy mutation-checked (a loosened policy fails a test).
+- 8 feature PRs merged (#50, #52, #57, #60, #68, plus #56 share-URL fix, #58 + #66 design), and the review CI (#54).
+- Production run-through of the loop: TODO results from #47.
+
+**2. What did I cut or move to Later?**
+- New Later issues: Studio badge so `author_name` can't be spoofed (#69), engineer profile name (#70), CI that
+  runs the tests (#71), server-side peaks job (#63, needs an ADR), link expiry (#59), "You already have access"
+  copy (#61), staging database (#64), light-theme E2E (#67), set-based RLS helpers (#53), loud-master waveform (#65).
+- Cut from #46 on purpose: no Realtime (refresh to see new comments), no editing or deleting comments.
+- **Pulled forward from Later:** visual design (#28), the one Later item for the week. It also made dark mode the
+  default, so #17 (dark mode) can be closed.
+- Open bug carried over: a red error flickers on the share page for a signed-in engineer (#62).
+
+**3. What slowed me down?**
+- TODO (Ryan): your own take, and anything outside the AI sessions.
+- Supabase's global "signups off" also blocks anonymous sign-ins, which share links need. A spike and two probes
+  before choosing the DB allowlist.
+- Security holes that only show up from the raw API: an allowlisted email could be claimed with a password
+  signup; a member could un-revoke a link; anonymous sign-in in a Server Action put every client behind one
+  shared 30/hour limit. Found by the independent review and the bot, not by the AI that wrote the code.
+- AI mistakes I had to catch: two more vacuous tests (an "attack" that inserted nothing), a songs policy that broke
+  `insert … returning`, a silent `localhost` fallback in production share links (I found it on production), size caps
+  that didn't bound decoded memory, `on delete cascade` that would have erased client comments, and work started on a
+  tool-named branch.
+- **Time:** TODO hours (budget 8–10 h). Done in 2 days, two weeks ahead of the Dec 6 milestone.
+
+**4. The single goal for Week 3:** TODO (Ryan). The plan says: multiple versions per song, resolve comments, email
+alerts. Suggestion: versions first (upload v2, comments stay with their version), since resolving and alerts build on it.
+
 ## 2026-11-19: Issue #4, magic-link auth (Claude Code)
 - **Asked:** Build #4: invite-only magic-link login, callback, sign-out, protected `/songs`.
 - **Built:** `src/proxy.ts` + `lib/supabase/proxy.ts` (session refresh via `getClaims()`, optimistic
