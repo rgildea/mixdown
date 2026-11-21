@@ -269,3 +269,38 @@ lined up (#2 closed).
   wasn't set for Production, and the code silently fell back to localhost. **AI got wrong:** a silent fallback to a
   plausible-but-wrong value. Now `siteUrl()` falls back to Vercel's runtime `VERCEL_PROJECT_PRODUCTION_URL` and
   ignores localhost values on Vercel; a production build with no URL at all throws instead of guessing.
+
+## 2026-11-21: Week 2 S3 (#44), client share page (Claude Code)
+- **Built:** `/s/[token]` (no side effects on load; **Listen** click → anonymous sign-in → redeem →
+  `/listen/[songId]`; returning visitors go straight through), the client listen page (RLS-only access,
+  fresh signed audio URL, revoked → 404 "This mix isn't available"), and anonymous sessions are never treated as engineers
+  (proxy + `getCurrentUser`); "no studio" is now a 404, not a 500 (#9 item).
+- **Decided (AI, recorded in ADR 0005):** click to listen rather than signing in on load, so link previews
+  (iMessage/Slack/email) can't create anonymous users. A test asserts that viewing the link creates no user.
+- **Tests:** 5 new E2E across two browsers (client plays the mix with no account; revoke cuts off; bad
+  links; anonymous blocked from engineer pages; engineer opening their own link).
+- **AI got wrong:** two pgTAP assertions from #52 counted revoked links across the WHOLE database as admin,
+  so they failed once E2E runs had revoked real links locally. Now scoped to the fixture's song; verified on
+  a dirty and a clean database.
+- **Bot review of #57 (first real one under #54) found a medium issue, fixed:** I'd put `signInAnonymously()` in
+  a Server Action, so Supabase saw Vercel's IP and every client shared one 30/hour anonymous limit. Since it signed in
+  before checking the token, anyone could exhaust it with junk tokens and block all clients. Now the browser
+  signs in (per-visitor IP) and the server only redeems, never creating users. Also: everyone clicks Listen
+  (loading the page used to redeem for existing sessions, a write on GET), plus 3 new tests: no grant from loading the
+  link while signed in; a replayed redeem without a session creates no user; a replayed engineer action with an
+  anonymous session creates nothing, **with a positive control** (the same replay as the engineer does create a link).
+- **Also:** `db:start` now removes a stale Docker pid file left by a container restart.
+- **Bot re-review:** all four fixed; one new low: the browser trusted `getSession()` (cookie only), so a
+  deleted anonymous user's browser would be stuck on "Try again". Now `getUser()` validates and a stale session
+  is cleared locally and replaced. The new test deletes the user mid-session (mutation-checked: the old code
+  gets stuck).
+- **Bot re-review of that fix (medium):** it treated *any* `getUser()` error as a dead session, so a network
+  blip, 5xx or 429 signed the browser out and replaced the client's anonymous identity (losing earlier grants) or
+  logged an engineer out. Now only "no session" or a 401/403 replaces the session; anything else says "Couldn't
+  reach the server" and keeps it. New test fails `/auth/v1/user` once (network, then 500) and checks no new
+  anonymous user is made (mutation-checked: fails on the previous code). Lesson: a fix that adds a network call
+  adds a new failure mode; test the failure, not just the happy recovery.
+- **Share page copy by visitor (Ryan's ask):** reviewed the flow for each visitor; a signed-in engineer was
+  told "No account needed". Now the page reads (never writes) the session: your own link → "This is your share
+  link" + preview + back to song; another account → "Signed in as …, the mix will be added to this account";
+  anonymous → unchanged. Decided: an engineer's grant stays on their real account (no guest option).
