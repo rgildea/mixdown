@@ -5,7 +5,33 @@ export type Database = {
   
   "public": {
           Tables: {
-            "mix_versions": {
+            "comments": {
+                  Row: {
+                    "at_ms": number | null,"author_name": string,"author_user_id": string,"body": string,"created_at": string,"id": string,"song_id": string,"version_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "at_ms"?: number | null,"author_name": string,"author_user_id"?: string,"body": string,"created_at"?: string,"id"?: string,"song_id": string,"version_id": string
+                  }
+                  Update: {
+                    "at_ms"?: number | null,"author_name"?: string,"author_user_id"?: string,"body"?: string,"created_at"?: string,"id"?: string,"song_id"?: string,"version_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "comments_song_id_fkey"
+      columns: ["song_id"]
+isOneToOne: false
+      referencedRelation: "songs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "comments_song_id_version_id_fkey"
+      columns: ["song_id","version_id"]
+isOneToOne: false
+      referencedRelation: "mix_versions"
+      referencedColumns: ["song_id","id"]
+    }
+                  ]
+                },"mix_versions": {
                   Row: {
                     "created_at": string,"created_by": string,"duration_ms": number | null,"id": string,"mime_type": string,"object_key": string,"original_filename": string,"peaks": (number)[] | null,"size_bytes": number,"song_id": string,"version_number": number
                   }
