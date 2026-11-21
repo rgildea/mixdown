@@ -7,14 +7,14 @@ export type Database = {
           Tables: {
             "comments": {
                   Row: {
-                    "at_ms": number | null,"author_name": string,"author_user_id": string,"body": string,"created_at": string,"id": string,"song_id": string,"version_id": string
+                    "at_ms": number | null,"author_name": string,"author_user_id": string | null,"body": string,"created_at": string,"id": string,"song_id": string,"version_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "at_ms"?: number | null,"author_name": string,"author_user_id"?: string,"body": string,"created_at"?: string,"id"?: string,"song_id": string,"version_id": string
+                    "at_ms"?: number | null,"author_name": string,"author_user_id"?: string | null,"body": string,"created_at"?: string,"id"?: string,"song_id": string,"version_id": string
                   }
                   Update: {
-                    "at_ms"?: number | null,"author_name"?: string,"author_user_id"?: string,"body"?: string,"created_at"?: string,"id"?: string,"song_id"?: string,"version_id"?: string
+                    "at_ms"?: number | null,"author_name"?: string,"author_user_id"?: string | null,"body"?: string,"created_at"?: string,"id"?: string,"song_id"?: string,"version_id"?: string
                   }
                   Relationships: [
                     {

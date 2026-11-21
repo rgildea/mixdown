@@ -1,7 +1,7 @@
 -- Timestamped comments (ADR 0005, issue #46). Run: npm run db:test
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(24);
 
 -- Fixtures: engineers Alice and Bob (separate studios); anonymous clients Carol (has Alice's link) and Dave (no link).
 select public.invite_user('alice@example.test'), public.invite_user('bob@example.test');
@@ -106,6 +106,14 @@ select throws_ok($$ insert into public.comments (song_id, version_id, at_ms, bod
 reset role;
 set local role anon;
 select throws_ok($$ select count(*) from public.comments $$, '42501', null, 'signed-out callers cannot read comments');
+
+-- ---------- Comments outlive their author's account (e.g. an anonymous-user cleanup job) ----------
+reset role;
+delete from auth.users where id = 'c3333333-3333-3333-3333-333333333333';
+select is((select count(*)::int from public.comments where body in ('Vocal too loud', 'Love it overall')), 2,
+  'deleting a client''s user keeps their comments');
+select is((select author_user_id from public.comments where body = 'Vocal too loud'), null,
+  '…with no author id (the name still shows who wrote it)');
 
 select * from finish();
 rollback;

@@ -79,6 +79,10 @@ test("a client comments at 1:23; the engineer sees it at 1:23 and clicking it se
   await client.reload();
   await client.getByLabel("Comment", { exact: true }).focus();
   await expect(client.getByLabel("Your name")).toHaveCount(0);
+  await expect(client.getByText("Posting as C.S.")).toBeVisible();
+  // …and can still be changed (a typo, or someone else on the same link).
+  await client.getByRole("button", { name: "Change name" }).click();
+  await expect(client.getByLabel("Your name")).toHaveValue("C.S.");
   await ctx.close();
 
   // The engineer sees it on the song page (after a refresh), and clicking it seeks without playing.

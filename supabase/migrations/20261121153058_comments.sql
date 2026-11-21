@@ -4,6 +4,7 @@
 --   read every comment on it and add their own. Revoking the link cuts a client off from comments too.
 -- * at_ms is null for a comment on the whole mix (the commenter cleared the timestamp).
 -- * No edits or deletes in v1: there are no UPDATE/DELETE policies or privileges.
+-- * Deleting a user keeps their comments (author_user_id becomes null).
 -- * author_name is display text the commenter chose (clients are anonymous, and an engineer's email must
 --   never be shown to a client). author_user_id is always the caller.
 
@@ -16,7 +17,10 @@ create table public.comments (
   version_id     uuid not null,
   at_ms          int check (at_ms between 0 and 24 * 60 * 60 * 1000),
   body           text not null check (char_length(btrim(body)) between 1 and 2000),
-  author_user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  -- Nullable so comments outlive their author's account: anonymous clients are throwaway users that a cleanup
+  -- job may delete, and the engineer must keep their feedback (author_name still says who wrote it). Inserts
+  -- always set it: the policy requires author_user_id = auth.uid().
+  author_user_id uuid default auth.uid() references auth.users (id) on delete set null,
   author_name    text not null check (char_length(btrim(author_name)) between 1 and 80),
   created_at     timestamptz not null default now(),
   foreign key (song_id, version_id) references public.mix_versions (song_id, id) on delete cascade

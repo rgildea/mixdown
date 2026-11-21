@@ -36,7 +36,8 @@ export function MixReview({ header, songId, mix, audioUrl, comments: initial, de
   const [draftAt, setDraftAt] = useState<number | null>(null);
   const [body, setBody] = useState("");
   const [name, setName] = useState(defaultName);
-  const [askName] = useState(defaultName === "");
+  // The name field shows until a name is saved; after that "Posting as … · Change" reopens it.
+  const [editingName, setEditingName] = useState(defaultName === "");
   const [pillHot, setPillHot] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +96,8 @@ export function MixReview({ header, songId, mix, audioUrl, comments: initial, de
         }
         setComments((cs) => [...cs, r.comment].toSorted(byTimeline));
         setActiveId(r.comment.id);
+        setName(r.comment.author_name);
+        setEditingName(false);
         reset();
       } catch {
         setError("Couldn't reach the server. Try again.");
@@ -139,7 +142,7 @@ export function MixReview({ header, songId, mix, audioUrl, comments: initial, de
             post();
           }}
         >
-          {drafting && askName && (
+          {drafting && editingName && (
             <div className="flex flex-col gap-1">
               <label htmlFor={ids.name} className="text-sm font-medium">
                 Your name
@@ -153,6 +156,14 @@ export function MixReview({ header, songId, mix, audioUrl, comments: initial, de
                 className="w-full max-w-xs"
               />
             </div>
+          )}
+          {drafting && !editingName && (
+            <p className="text-sm text-subtle">
+              Posting as <span className="font-medium text-foreground">{name}</span> ·{" "}
+              <Button variant="link" size="sm" onClick={() => setEditingName(true)}>
+                Change name
+              </Button>
+            </p>
           )}
 
           <div className="flex flex-col gap-1.5 rounded-control border border-line-strong bg-surface p-3 focus-within:border-focus-ring">
