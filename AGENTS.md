@@ -65,6 +65,9 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
   "## Claude review" comment. Its instructions are `.github/review-prompt.md`, read from the BASE branch, so
   a PR changing them is reviewed with the old ones; a PR changing the workflow itself isn't reviewed
   ("did not complete"). "Did not complete" never means "no findings". It doesn't replace an independent review.
+- RLS select policies must not look up the SAME table by id (e.g. a helper doing `select … from songs where
+  id = …` in the songs policy): the lookup can't see a row inserted in the same statement, so
+  `insert … returning` fails. Check the row's own columns instead. pgTAP covers this for `songs`.
 - Supabase Free plan pauses the project after 7 days idle.
 - Pages must authorize themselves (`getCurrentUser()` / `getCurrentWorkspace()`); the `/songs`
   layout's check does not protect child pages. Server Actions too: they're public endpoints.

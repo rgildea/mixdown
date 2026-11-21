@@ -25,6 +25,52 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"share_links": {
+                  Row: {
+                    "created_at": string,"created_by": string,"expires_at": string | null,"id": string,"revoked_at": string | null,"song_id": string,"token": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string,"expires_at"?: string | null,"id"?: string,"revoked_at"?: string | null,"song_id": string,"token": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string,"expires_at"?: string | null,"id"?: string,"revoked_at"?: string | null,"song_id"?: string,"token"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "share_links_song_id_fkey"
+      columns: ["song_id"]
+isOneToOne: false
+      referencedRelation: "songs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"song_access": {
+                  Row: {
+                    "created_at": string,"role": string,"share_link_id": string,"song_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"role"?: string,"share_link_id": string,"song_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"role"?: string,"share_link_id"?: string,"song_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "song_access_share_link_id_fkey"
+      columns: ["share_link_id"]
+isOneToOne: false
+      referencedRelation: "share_links"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "song_access_song_id_fkey"
+      columns: ["song_id"]
+isOneToOne: false
+      referencedRelation: "songs"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"songs": {
                   Row: {
                     "client_name": string | null,"created_at": string,"created_by": string,"id": string,"title": string,"workspace_id": string
@@ -85,7 +131,12 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "invite_user":
+{ Args: { "email": string }; Returns: undefined
+                           },
+"redeem_share_link":
+{ Args: { "link_token": string }; Returns: string
+                           }
           }
           Enums: {
             [_ in never]: never
