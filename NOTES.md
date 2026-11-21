@@ -294,3 +294,9 @@ lined up (#2 closed).
   deleted anonymous user's browser would be stuck on "Try again". Now `getUser()` validates and a stale session
   is cleared locally and replaced. The new test deletes the user mid-session (mutation-checked: the old code
   gets stuck).
+- **Bot re-review of that fix (medium):** it treated *any* `getUser()` error as a dead session, so a network
+  blip, 5xx or 429 signed the browser out and replaced the client's anonymous identity (losing earlier grants) or
+  logged an engineer out. Now only "no session" or a 401/403 replaces the session; anything else says "Couldn't
+  reach the server" and keeps it. New test fails `/auth/v1/user` once (network, then 500) and checks no new
+  anonymous user is made (mutation-checked: fails on the previous code). Lesson: a fix that adds a network call
+  adds a new failure mode; test the failure, not just the happy recovery.

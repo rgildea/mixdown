@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { isAuthApiError, isAuthSessionMissingError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { redeemSharedMix } from "./actions";
 
@@ -14,12 +15,21 @@ export function OpenButton({ token }: { token: string }) {
       try {
         // Sign in anonymously IN THE BROWSER, only if there's no valid session yet, so the rate limit
         // is per visitor. The session cookie is then sent with the Server Action below.
-        // getUser() checks the session with Supabase (getSession() only reads the cookie): a stale
-        // session (e.g. its anonymous user was cleaned up) is cleared locally and replaced.
+        // getUser() checks the session with Supabase (getSession() only reads the cookie). Only a
+        // definite "no session" or "this session/user is gone" (401/403, e.g. its anonymous user was
+        // cleaned up) replaces the session. Any other error (offline, 5xx, 429) keeps it: dropping it
+        // would lose the client's earlier grants, or log an engineer out over a network blip.
         const supabase = createClient();
         const { data, error: userError } = await supabase.auth.getUser();
-        if (userError || !data.user) {
-          await supabase.auth.signOut({ scope: "local" });
+        if (!data.user) {
+          const noSession = !userError || isAuthSessionMissingError(userError);
+          const deadSession =
+            isAuthApiError(userError) && (userError.status === 401 || userError.status === 403);
+          if (!noSession && !deadSession) {
+            setError("Couldn't reach the server. Try again.");
+            return;
+          }
+          if (deadSession) await supabase.auth.signOut({ scope: "local" });
           const { error: signInError } = await supabase.auth.signInAnonymously();
           if (signInError) {
             setError(

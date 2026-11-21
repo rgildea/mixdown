@@ -219,3 +219,27 @@ test("a stale session (its anonymous user was deleted) recovers instead of getti
   await expect(client).toHaveURL(/\/listen\//); // a fresh anonymous session, not "Try again"
   await ctx.close();
 });
+
+test("a failed session check (offline, 5xx) keeps the client's session instead of replacing it", async ({ page, browser }) => {
+  const { sharePath } = await engineerShares(page, `Flaky check ${Date.now()}`);
+  const { ctx, page: client } = await clientPage(browser);
+  await client.goto(sharePath);
+  await client.getByRole("button", { name: "Listen" }).click();
+  await expect(client).toHaveURL(/\/listen\//);
+  const anon = await adminAnonymousUserCount();
+
+  // Supabase's "who am I" check fails once: first the network, then a server error.
+  for (const fail of ["abort", "500"] as const) {
+    await client.route("**/auth/v1/user", (r) => (fail === "abort" ? r.abort() : r.fulfill({ status: 500, body: "{}" })), { times: 1 });
+    await client.goto(sharePath);
+    await client.getByRole("button", { name: "Listen" }).click();
+    await expect(client.getByText("Couldn't reach the server. Try again.")).toBeVisible();
+    expect(await adminAnonymousUserCount()).toBe(anon); // no new identity
+  }
+
+  // The next click works with the SAME session: still no new anonymous user.
+  await client.getByRole("button", { name: "Listen" }).click();
+  await expect(client).toHaveURL(/\/listen\//);
+  expect(await adminAnonymousUserCount()).toBe(anon);
+  await ctx.close();
+});
