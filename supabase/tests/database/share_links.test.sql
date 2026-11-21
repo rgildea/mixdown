@@ -1,7 +1,7 @@
 -- Share links + client grants (ADR 0005, issue #43). Run: npm run db:test
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(37);
+select plan(38);
 
 -- Fixtures: engineers Alice and Bob (separate studios), anonymous client Carol.
 select public.invite_user('alice@example.test'), public.invite_user('bob@example.test');
@@ -73,6 +73,12 @@ select throws_ok($$ insert into public.songs (workspace_id, title) select v, 'x'
 select throws_ok($$ insert into public.mix_versions (song_id, object_key, original_filename, mime_type, size_bytes)
                    values ('5a000000-0000-0000-0000-00000000000a', 'k/evil.wav', 'e.wav', 'audio/wav', 1) $$,
   '42501', null, 'a client cannot add mix versions');
+-- A client can't extend their grant to another studio's song.
+insert into public.song_access (song_id, user_id, share_link_id)
+  select '5b000000-0000-0000-0000-00000000000b', 'c3333333-3333-3333-3333-333333333333', l.id
+  from public.share_links l where l.song_id = '5b000000-0000-0000-0000-00000000000b';
+select is((select count(*)::int from public.song_access where song_id = '5b000000-0000-0000-0000-00000000000b'), 0,
+  'a client cannot grant themselves access to another studio''s song');
 select throws_ok($$ insert into public.song_access (song_id, user_id, share_link_id)
                    values ('5b000000-0000-0000-0000-00000000000b', 'c3333333-3333-3333-3333-333333333333',
                            (select v from fx where k = 'alice_link')) $$,
