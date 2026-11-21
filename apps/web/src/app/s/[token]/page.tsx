@@ -53,7 +53,7 @@ export default async function SharePage({ params }: PageProps<"/s/[token]">) {
               : "This is the page your client sees."}
           </p>
           {!own.revoked_at && <OpenButton token={token} label="Preview as client" />}
-          <ButtonLink href={`/songs/${own.song_id}`} variant="link" className="text-subtle">
+          <ButtonLink href={`/songs/${own.song_id}`} variant="link">
             Back to song
           </ButtonLink>
         </Shell>

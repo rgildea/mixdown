@@ -146,14 +146,18 @@ replacing it.
 | `cx()` | class names | Joins truthy class names |
 
 **Buttons:** pick the variant by role, not looks. `primary` is the one action the view exists for
-(Create song and upload, Create share link, Open mix, New song). `secondary` is every other button
-(Copy link, Try again next to a primary). `ghost` is for toolbars. `link` and `danger-link` are inline
+(Create song and upload, Create share link, Listen, New song; Try again when recovering is the view's
+main action). `secondary` is every other button (Copy link). `ghost` is for toolbars. `link` and `danger-link` are inline
 actions (Sign out, Back to songs, Revoke). Labels are verb first, sentence case, 1–3 words.
 
 **Waveform player** (`src/components/waveform-player.tsx`): bars sit in a `surface-sunken` well;
 played bars are `waveform-played`, unplayed `waveform-rest`, the playhead is a 2px `playhead` line.
 Flat bars, no gradients or glows, and don't colour bars per section or comment. wavesurfer.js draws
 on a canvas, so the player reads token values with `getComputedStyle` when it mounts.
+
+Don't restyle a component by passing a conflicting utility in `className` (e.g. a second text colour):
+`cx()` joins classes without merging them, so Tailwind's CSS order decides which wins. Add a variant or
+prop instead; `className` is for layout (`w-fit`, margins).
 
 Components are plain Tailwind and React, with no component library (PROJECT.md).
 
@@ -165,7 +169,7 @@ Components are plain Tailwind and React, with no component library (PROJECT.md).
 - **New song**: `Field`s, the dashed drop zone, the progress bar, one primary submit.
 - **Song** (`/songs/[id]`): `PageHeader`, the mix `Card` with the waveform player, then the share
   `Card` (link in a read-only mono `Input`, secondary Copy link, `danger-link` Revoke).
-- **Share redeem** (`/s/[token]`): centered `text-title`, one `muted` line, a `lg` primary "Open mix".
+- **Share redeem** (`/s/[token]`): centered `text-title`, one `muted` line, a `lg` primary "Listen".
 - **Listen** (`/listen/[songId]`): `Wordmark`, title, the mix `Card`.
 
 ## Changing the system

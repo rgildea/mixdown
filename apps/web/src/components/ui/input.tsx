@@ -7,9 +7,11 @@ export function Input({ className, readOnly, ...props }: ComponentProps<"input">
     <input
       readOnly={readOnly}
       className={cx(
-        "h-control rounded-control border border-line-strong bg-surface px-3 text-foreground placeholder:text-faint",
+        "h-control rounded-control border border-line-strong px-3 placeholder:text-faint",
         "hover:border-line-active focus-visible:border-focus-ring focus-visible:outline-offset-0",
-        readOnly && "bg-surface-sunken text-muted",
+        // Either/or, never both: cx() doesn't merge classes, so two utilities for one property would
+        // be decided by Tailwind's CSS order, not by the order here.
+        readOnly ? "bg-surface-sunken text-muted" : "bg-surface text-foreground",
         className,
       )}
       {...props}
