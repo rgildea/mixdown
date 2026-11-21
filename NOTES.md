@@ -269,3 +269,17 @@ lined up (#2 closed).
   wasn't set for Production, and the code silently fell back to localhost. **AI got wrong:** a silent fallback to a
   plausible-but-wrong value. Now `siteUrl()` falls back to Vercel's runtime `VERCEL_PROJECT_PRODUCTION_URL` and
   ignores localhost values on Vercel; a production build with no URL at all throws instead of guessing.
+
+## 2026-11-21: Design tokens and UI components, ahead of a Claude Design import (Claude Code)
+- **Asked:** tidy colors, type, spacing and components so a `/design-sync` or Claude Design repo import comes
+  out clean. Plan shown first and approved.
+- **Built:** semantic color tokens (`primary`, `muted`, `subtle`, `line`, `danger`…) and `rounded-control` /
+  `rounded-card` in `globals.css` (Tailwind v4 `@theme`), with the same values as before; `src/components/ui/`
+  (`Button`/`ButtonLink`, `Input`, `Field`, `ErrorText`, `Alert`, `Card`, `EmptyState`, `PageHeader`,
+  `Wordmark`); every page switched over, no raw zinc/red/emerald left; `docs/design-system.md`.
+- **Visible changes (small, on purpose):** primary buttons now have a hover shade and pointer cursor; the
+  login-link error box has the same padding as the success box, and the login label sits closer to its input
+  (same `Field` spacing as the new-song form). Songs list and song page are pixel-identical before and after.
+- **AI got wrong:** first draft mapped `--radius-control: var(--radius-control)` inside `@theme inline`, a
+  self-reference; radii now live in a plain `@theme` block.
+- **Not done:** dark mode (later issue); PR #57's new `/s` and `/listen` pages move onto the components after it merges.
