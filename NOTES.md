@@ -387,3 +387,8 @@ lined up (#2 closed).
   so the 2px playhead hid the 1px line completely; now the playhead spans only the bars. The textarea showed the
   global focus ring inside the composer's own focus border.
 - Not verified: Safari/Firefox, a real phone, Realtime (not built), screen-reader pass beyond labels.
+- **Bot review of #68 (1 medium, 2 low):** (medium) `author_user_id ... on delete cascade` would let an anonymous-user
+  cleanup erase client feedback; now `on delete set null`, with a pgTAP test that fails on cascade. (low) the name couldn't
+  be changed after the first comment; now "Posting as … · Change name". (low) `author_name` can be spoofed by anyone
+  with the link: Ryan filed it as later #69 (server-derived Studio badge), plus #70 (engineer profile to set the name
+  up front). **AI got wrong:** chose cascade by habit without thinking about throwaway anonymous users.
