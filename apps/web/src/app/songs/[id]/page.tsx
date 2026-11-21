@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace";
+import { getSessionUser } from "@/lib/auth";
 import { presignPlayback } from "@/lib/r2";
 import { MixCard } from "@/components/mix-card";
+import { displayName, getComments } from "@/lib/comments";
 import { LocalDate } from "@/components/local-date";
 import { SharePanel } from "./share-panel";
 import { siteUrl } from "@/lib/site-url";
@@ -22,7 +24,7 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
   const supabase = await createClient();
   const { data: song, error } = await supabase
     .from("songs")
-    .select("id, title, client_name, created_at, mix_versions (version_number, object_key, original_filename, size_bytes, duration_ms, peaks)")
+    .select("id, title, client_name, created_at, mix_versions (id, version_number, object_key, original_filename, size_bytes, duration_ms, peaks)")
     .eq("id", id)
     .eq("workspace_id", workspace.id)
     .maybeSingle();
@@ -33,6 +35,8 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
   const mix = song.mix_versions.toSorted((a, b) => b.version_number - a.version_number)[0] ?? null;
   // A fresh 1-hour signed URL on every request (ADR 0003): refreshing the page restores playback.
   const audioUrl = mix ? await presignPlayback(mix.object_key) : null;
+  const comments = mix ? await getComments(mix.id) : [];
+  const user = await getSessionUser();
 
   // The active share link, if any (readable only by studio members, via RLS).
   const { data: link } = await supabase
@@ -59,7 +63,14 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
       />
 
       {mix && audioUrl ? (
-        <MixCard mix={mix} audioUrl={audioUrl} />
+        <MixCard
+          songId={song.id}
+          mix={mix}
+          audioUrl={audioUrl}
+          comments={comments}
+          defaultName={displayName(user)}
+          postVariant="secondary"
+        />
       ) : (
         <EmptyState
           aria-label="Mix"
