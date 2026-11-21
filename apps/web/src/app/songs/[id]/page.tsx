@@ -6,6 +6,7 @@ import { presignPlayback } from "@/lib/r2";
 import { formatBytes } from "@/lib/upload-rules";
 import { LocalDate } from "@/components/local-date";
 import { SharePanel } from "./share-panel";
+import { siteUrl } from "@/lib/site-url";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -42,8 +43,7 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
     .maybeSingle();
   // Built from the configured site URL, not request headers: a link copied on a (login-protected)
   // Vercel preview still points at production, and no proxy header can change the domain.
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
-  const shareUrl = link ? `${siteUrl}/s/${link.token}` : null;
+  const shareUrl = link ? `${siteUrl()}/s/${link.token}` : null;
 
   return (
     <main className="flex flex-col gap-6">

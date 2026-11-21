@@ -258,3 +258,14 @@ lined up (#2 closed).
 - **Changed:** a project-specific prompt (`.github/review-prompt.md`, pointing at AGENTS.md), Opus at high
   effort, strict read-only tools, every push re-reviewed, one comment edited in place, posted by a separate job.
   Cost per push goes up (estimate $1–3); validation is a canary PR after merge.
+
+## 2026-11-21: Review canary + share-URL fix (Claude Code)
+- **Canary PR #55 for the new review (#54):** three subtle planted bugs (songs policy re-query that breaks
+  `insert … returning`, a song page relying on RLS alone, a vacuous pgTAP attack). The review caught all three with
+  correct severities (1 high, 2 medium), then edited the same comment after a fix push (fixed one dropped,
+  two "still open"). About $0.47 and 66 s per run. Our own pgTAP regression also caught the policy bug; the other
+  two pass every test, which is why the review matters. It pointed out that no CI runs `db:test`.
+- **Bug (found by Ryan on production):** share links said `http://localhost:3000/s/…`. `NEXT_PUBLIC_SITE_URL`
+  wasn't set for Production, and the code silently fell back to localhost. **AI got wrong:** a silent fallback to a
+  plausible-but-wrong value. Now `siteUrl()` falls back to Vercel's runtime `VERCEL_PROJECT_PRODUCTION_URL` and
+  ignores localhost values on Vercel; a production build with no URL at all throws instead of guessing.
