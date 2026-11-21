@@ -29,9 +29,12 @@ Details:
   `decodeAudioData`, constant memory. Duration comes from the header (data bytes ÷ byte rate), so
   it's exact. Spike: a 300 MB 24-bit stereo WAV took **2.1 s** in Chromium, each chunk ~30 ms
   (under the 50 ms "long task" line), so the tab stays responsive during the upload.
-- **MP3:** `decodeAudioData` on the file, **only up to 20 MB** (decoding holds the whole file as float
-  PCM: ~8 min at 320 kbps is ~180 MB), with the peak loop in slices that yield. Larger MP3s get no
-  waveform. Duration from the decoded buffer. A 19.6 MB, 8 min MP3: longest main-thread pause ~145 ms.
+- **MP3:** `decodeAudioData` on the file, with the peak loop in slices that yield. Decoding holds the
+  whole file as float32 PCM at 44.1 kHz (~21 MB per stereo minute, whatever the bitrate), so the cap is
+  on the **decoded size**: the duration is first read from the MP3's metadata by an audio element (no
+  decode), and MP3s that would decode to over 300 MB (~14 min, assuming stereo) get no waveform. A 40 MB
+  file cap is a backstop. Duration from the decoded buffer. A 19.6 MB, 8 min MP3: longest main-thread
+  pause ~145 ms. Server-side peaks (#63) would lift this limit.
 - **Peaks format:** **2,000 values**, one channel (the louder of L/R in each slice), each 0–1,
   rounded to 3 decimals. Enough for a page up to ~1,000 px wide at 2× density; zooming is not in v1.
 - **Schema (new migration):** `mix_versions.duration_ms int` (1 ms … 24 h) and
@@ -44,7 +47,7 @@ Details:
 - **Never blocks the upload:** "Finishing…" waits at most 10 s for the scan after the upload itself is
   done, then saves the mix without a waveform.
 - **Missing peaks** (rows uploaded before this change, a WAV variant we can't parse such as ADPCM, an MP3
-  over 20 MB, or a scan that didn't finish in time): the upload still succeeds with nulls, and the page shows the plain `<audio>` player
+  over ~14 min, or a scan that didn't finish in time): the upload still succeeds with nulls, and the page shows the plain `<audio>` player
   as today. No "decode it in the browser" fallback, because that downloads the whole file first.
 - **Player:** `wavesurfer.js` 8.1 (BSD-3), one shared Client Component used by both pages, created with
   `media: <the audio element>`, `peaks`, `duration`, click and drag to seek. The `<audio controls>` stays
@@ -71,6 +74,8 @@ Details:
   like `ts <= duration_ms`, which passes when the duration is null.
 - Existing dev/test uploads have no waveform until re-uploaded (no backfill: nothing in production yet).
 - Week 3 versions reuse the same upload step, so every new version gets peaks for free.
+- Ryan's preference was server-side peaks; this ADR is the Week 2 step. **#63** (later, needs an ADR)
+  tracks an async server job that measures every format with no size or length limit.
 - Later, if needed: a Web Worker for the scan (only if the 30 ms chunks prove janky on slow laptops),
   more peak resolution for zoom, and RF64 for WAVs over 4 GB (above our 500 MB limit anyway).
 
@@ -80,3 +85,4 @@ Details:
 | 2026-11-21 | Created (Proposed). | #45 asks for an ADR before building the waveform. |
 | 2026-11-21 | Accepted by Ryan as drafted. | — |
 | 2026-11-21 | Body updated to what shipped: RIFF chunk walk, 8-bit and 64-bit float WAV, `waveform` argument shape, peak rounding, MP3 cap 20 MB with yielding, 10 s scan grace, null-duration note for #46. | Bot review of PR #60 (MP3 decode could freeze/crash the tab; 1e-50 failed the insert; ADR drifted from code). |
+| 2026-11-21 | MP3 cap changed from 20 MB file size to 300 MB estimated decoded size (~14 min), from the metadata duration. Later issue #63 for server-side peaks. | Bot re-review of PR #60: a size cap doesn't bound decoded memory (a 20 MB 128 kbps stereo MP3 decodes to ~460 MB). Ryan chose this fix for now. |

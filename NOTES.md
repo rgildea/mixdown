@@ -347,3 +347,9 @@ lined up (#2 closed).
   scanner (new tamper test). (low) ADR body drifted from the code; updated with a changelog row, plus a note that #46
   must not rely on `duration_ms` being set. Both new tests fail on the old code. **AI got wrong:** "never blocks the
   upload" was claimed but only true for WAV; checking a property needs a test of the path that breaks it.
+- **Bot re-review (1 low):** my 20 MB MP3 cap comment quoted the mono decoded size; a long 128 kbps stereo MP3 still
+  decodes to ~460 MB. **AI got wrong:** a file-size cap doesn't bound decoded memory (bitrate varies). Now capped by
+  estimated decoded size (duration from metadata, no decode; ≤ 300 MB, ~14 min). Two small generated MP3 fixtures
+  (5 s tone; 15 min at 8 kbps, under 1 MB) prove an MP3 gets a waveform and a long one is never decoded (fails on
+  the old code). **Ryan:** "This is why I wanted to do it on the server": later issue #63 for an async server-side
+  peaks job (needs an ADR).

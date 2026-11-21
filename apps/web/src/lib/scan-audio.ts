@@ -5,11 +5,15 @@ import { MAX_DURATION_MS, PEAK_COUNT, type Waveform } from "./waveform-rules";
 
 const CHUNK_BYTES = 4 * 1024 * 1024;
 /**
- * decodeAudioData holds the whole decoded file in memory (float32, every channel). 20 MB is ~8 min at
- * 320 kbps (~180 MB decoded) or ~22 min at 128 kbps (~230 MB). Longer MP3s get no waveform rather
- * than risk crashing the tab mid-upload. A typical song at 320 kbps is ~10 MB.
+ * decodeAudioData holds the whole file as float32 PCM, resampled to 44.1 kHz, in every channel: about
+ * 21 MB per minute of stereo, whatever the MP3's bitrate. So the cap is on the decoded size, estimated
+ * from the duration the browser reads from the MP3's metadata (assuming stereo): 300 MB is ~14 min.
+ * Longer MP3s get no waveform rather than risk crashing the tab mid-upload. The byte cap is a backstop
+ * (14 min at 320 kbps is ~33 MB). Server-side peaks would remove this limit (later issue).
  */
-const MAX_DECODE_BYTES = 20 * 1024 * 1024;
+const MAX_DECODED_BYTES = 300 * 1024 * 1024;
+const MAX_DECODE_BYTES = 40 * 1024 * 1024;
+const DECODE_RATE = 44100;
 /** Frames per slice of the decoded-MP3 peak loop, between yields (~1M samples, a few ms). */
 const DECODED_SLICE_FRAMES = 1 << 19;
 
@@ -141,7 +145,9 @@ function toSamples(buf: ArrayBuffer, fmt: WavFormat): { length: number; get(i: n
 /** MP3: let the browser decode it (MP3s are ~10x smaller than WAVs of the same length). */
 async function scanDecoded(file: File): Promise<Waveform | null> {
   if (file.size > MAX_DECODE_BYTES) return null;
-  const ctx = new OfflineAudioContext(1, 1, 44100);
+  const seconds = await metadataDuration(file);
+  if (seconds === null || seconds * DECODE_RATE * 2 * 4 > MAX_DECODED_BYTES) return null;
+  const ctx = new OfflineAudioContext(1, 1, DECODE_RATE);
   const audio = await ctx.decodeAudioData(await file.arrayBuffer());
   const frames = audio.length;
   if (frames < 1) return null;
@@ -160,6 +166,25 @@ async function scanDecoded(file: File): Promise<Waveform | null> {
     await new Promise((r) => setTimeout(r, 0)); // same as scanWav: never freeze the tab
   }
   return { durationMs: Math.round(audio.duration * 1000), peaks: finish(peaks) };
+}
+
+/** The duration an audio element reads from the file's headers, without decoding it. Null if unknown. */
+function metadataDuration(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const audio = new Audio();
+    const done = (value: number | null) => {
+      clearTimeout(timer);
+      audio.removeAttribute("src");
+      URL.revokeObjectURL(url);
+      resolve(value);
+    };
+    const timer = setTimeout(() => done(null), 5000);
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => done(Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null);
+    audio.onerror = () => done(null);
+    audio.src = url;
+  });
 }
 
 /** Clamp (float WAVs and decoders can exceed 1.0 when clipping) and round to 3 decimals. */

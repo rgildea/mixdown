@@ -7,6 +7,7 @@ import { adminMixWaveform, isFinishUpload, tamperAction } from "./tamper";
 // Waveform peaks + duration measured in the browser at upload (ADR 0010, issue #45).
 const DEV = "dev@example.test";
 const SONG_URL = /\/songs\/([0-9a-f-]{36})$/;
+const FIXTURES = path.join(__dirname, "fixtures");
 
 /** WAV header for `dataBytes` of PCM. */
 function wavHeader(dataBytes: number, channels: number, sampleRate: number, bits: number): Buffer {
@@ -104,6 +105,33 @@ test("a tampered waveform is dropped by the server, and the upload still succeed
   expect(await adminMixWaveform(songId)).toEqual({ duration_ms: null, peaks: null });
 });
 
+test("an MP3 gets a waveform too", async ({ page }) => {
+  await signIn(page, DEV);
+  const songId = await upload(page, `MP3 wave ${Date.now()}`, path.join(FIXTURES, "tone-5s.mp3"));
+  const stored = await adminMixWaveform(songId);
+  expect(stored.duration_ms).toBeGreaterThan(4900); // encoder padding adds a few ms
+  expect(stored.duration_ms).toBeLessThan(5200);
+  expect(stored.peaks).toHaveLength(2000);
+  await expect(page.getByTestId("waveform")).toHaveAttribute("data-ready", "true");
+});
+
+test("a long MP3 is not decoded, however small the file (decoded size cap)", async ({ page }) => {
+  await signIn(page, DEV);
+  // 15 min at 8 kbps is under 1 MB but would decode to ~300 MB of PCM (PR #60 re-review).
+  let decoded = false;
+  await page.exposeFunction("__decodeCalled", () => (decoded = true));
+  await page.addInitScript(() => {
+    const original = OfflineAudioContext.prototype.decodeAudioData;
+    OfflineAudioContext.prototype.decodeAudioData = function (this: OfflineAudioContext, ...args) {
+      (window as unknown as { __decodeCalled: () => void }).__decodeCalled();
+      return original.apply(this, args as Parameters<typeof original>);
+    } as typeof original;
+  });
+  const songId = await upload(page, `Long MP3 ${Date.now()}`, path.join(FIXTURES, "tone-15min-8kbps.mp3"));
+  expect(await adminMixWaveform(songId)).toEqual({ duration_ms: null, peaks: null });
+  expect(decoded).toBe(false);
+});
+
 test("a peak too small for Postgres `real` is rounded, not a failed upload", async ({ page }) => {
   await signIn(page, DEV);
   // 1e-50 passes a 0–1 range check but Postgres rejects it as "out of range for type real" (PR #60 review).
@@ -121,9 +149,8 @@ test("a scan that never finishes doesn't hold up the upload", async ({ page }) =
     OfflineAudioContext.prototype.decodeAudioData = () => new Promise<AudioBuffer>(() => {});
   });
   await signIn(page, DEV);
-  const songId = await upload(page, `Stuck scan ${Date.now()}`, {
-    name: "stuck.mp3", mimeType: "audio/mpeg", buffer: Buffer.alloc(300_000, 1),
-  });
+  // A real MP3, so the scan gets past the metadata read to the decoder.
+  const songId = await upload(page, `Stuck scan ${Date.now()}`, path.join(FIXTURES, "tone-5s.mp3"));
   expect(await adminMixWaveform(songId)).toEqual({ duration_ms: null, peaks: null });
 });
 
