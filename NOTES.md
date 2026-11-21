@@ -304,3 +304,17 @@ lined up (#2 closed).
   told "No account needed". Now the page reads (never writes) the session: your own link → "This is your share
   link" + preview + back to song; another account → "Signed in as …, the mix will be added to this account";
   anonymous → unchanged. Decided: an engineer's grant stays on their real account (no guest option).
+
+## 2026-11-21: Design tokens and UI components, ahead of a Claude Design import (Claude Code)
+- **Asked:** tidy colors, type, spacing and components so a `/design-sync` or Claude Design repo import comes
+  out clean. Plan shown first and approved.
+- **Built:** semantic color tokens (`primary`, `muted`, `subtle`, `line`, `danger`…) and `rounded-control` /
+  `rounded-card` in `globals.css` (Tailwind v4 `@theme`), with the same values as before; `src/components/ui/`
+  (`Button`/`ButtonLink`, `Input`, `Field`, `ErrorText`, `Alert`, `Card`, `EmptyState`, `PageHeader`,
+  `Wordmark`); every page switched over, no raw zinc/red/emerald left; `docs/design-system.md`.
+- **Visible changes (small, on purpose):** primary buttons now have a hover shade and pointer cursor; the
+  login-link error box has the same padding as the success box, and the login label sits closer to its input
+  (same `Field` spacing as the new-song form). Songs list and song page are pixel-identical before and after.
+- **AI got wrong:** first draft mapped `--radius-control: var(--radius-control)` inside `@theme inline`, a
+  self-reference; radii now live in a plain `@theme` block.
+- **After #57 merged:** its `/s` and `/listen` pages moved onto the components too. Not done: dark mode (later issue).

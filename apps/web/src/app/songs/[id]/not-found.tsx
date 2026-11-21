@@ -1,13 +1,13 @@
-import Link from "next/link";
+import { ButtonLink, PageHeader } from "@/components/ui";
 
 export default function SongNotFound() {
   return (
     <main className="flex flex-col gap-3">
-      <h1 className="text-2xl font-semibold tracking-tight">Song not found</h1>
-      <p className="text-zinc-600">It may have been deleted, or it belongs to another studio.</p>
-      <Link href="/songs" className="w-fit text-sm underline underline-offset-4">
+      <PageHeader title="Song not found" />
+      <p className="text-muted">It may have been deleted, or it belongs to another studio.</p>
+      <ButtonLink href="/songs" variant="link" className="w-fit">
         Back to songs
-      </Link>
+      </ButtonLink>
     </main>
   );
 }

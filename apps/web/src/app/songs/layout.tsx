@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Button, Wordmark } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth";
 import { signOut } from "@/app/auth/actions";
 
@@ -10,16 +10,14 @@ export default async function SongsLayout({ children }: LayoutProps<"/songs">) {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-8">
-      <header className="flex items-center justify-between border-b border-zinc-200 pb-4">
-        <Link href="/songs" className="text-lg font-semibold tracking-tight">
-          Mixdown
-        </Link>
-        <div className="flex items-center gap-4 text-sm text-zinc-600">
+      <header className="flex items-center justify-between border-b border-line pb-4">
+        <Wordmark href="/songs" />
+        <div className="flex items-center gap-4 text-sm text-muted">
           <span>{user.email}</span>
           <form action={signOut}>
-            <button type="submit" className="underline underline-offset-4 hover:text-zinc-900">
+            <Button type="submit" variant="link" size="md">
               Sign out
-            </button>
+            </Button>
           </form>
         </div>
       </header>

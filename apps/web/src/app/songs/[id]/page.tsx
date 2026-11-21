@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace";
@@ -7,6 +6,7 @@ import { formatBytes } from "@/lib/upload-rules";
 import { LocalDate } from "@/components/local-date";
 import { SharePanel } from "./share-panel";
 import { siteUrl } from "@/lib/site-url";
+import { Card, EmptyState, PageHeader } from "@/components/ui";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -47,34 +47,35 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
 
   return (
     <main className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <Link href="/songs" className="text-sm text-zinc-500 hover:text-zinc-900">
-          ← Songs
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{song.title}</h1>
-        <p className="text-sm text-zinc-500">
-          {song.client_name ? `${song.client_name} · ` : ""}
-          Created <LocalDate iso={song.created_at} />
-        </p>
-      </div>
+      <PageHeader
+        title={song.title}
+        back={{ href: "/songs", label: "Songs" }}
+        meta={
+          <>
+            {song.client_name ? `${song.client_name} · ` : ""}
+            Created <LocalDate iso={song.created_at} />
+          </>
+        }
+      />
 
       {mix && audioUrl ? (
-        <section aria-label="Mix" className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
+        <Card aria-label="Mix">
           <div className="flex items-baseline justify-between gap-4">
             <p className="truncate font-medium">{mix.original_filename}</p>
-            <p className="shrink-0 text-sm text-zinc-500">
+            <p className="shrink-0 text-sm text-subtle">
               v{mix.version_number} · {formatBytes(mix.size_bytes)}
             </p>
           </div>
           <audio controls preload="metadata" src={audioUrl} className="w-full" aria-label={`Play ${mix.original_filename}`}>
             Your browser can&apos;t play this file.
           </audio>
-        </section>
+        </Card>
       ) : (
-        <section aria-label="Mix" className="rounded-lg border border-dashed border-zinc-300 p-6 text-center">
-          <p className="font-medium">No mix uploaded</p>
-          <p className="text-sm text-zinc-500">The upload for this song didn&apos;t finish.</p>
-        </section>
+        <EmptyState
+          aria-label="Mix"
+          title="No mix uploaded"
+          description="The upload for this song didn't finish."
+        />
       )}
 
       <SharePanel songId={song.id} url={shareUrl} />

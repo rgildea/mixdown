@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ACCEPT_ATTR, checkUpload, formatBytes } from "@/lib/upload-rules";
+import { Button, Field, Input, ErrorText, cx } from "@/components/ui";
 import { createSong, createUploadUrl, finishUpload } from "./actions";
 
 type Phase =
@@ -128,28 +129,20 @@ export function NewSongForm() {
   return (
     <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-4">
       <fieldset disabled={busy || songId !== null} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="title" className="text-sm font-medium">
-            Title
-          </label>
-          <input id="title" name="title" required maxLength={200} className="rounded-md border border-zinc-300 px-3 py-2" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="client_name" className="text-sm font-medium">
-            Client / artist <span className="font-normal text-zinc-500">(optional)</span>
-          </label>
-          <input id="client_name" name="client_name" maxLength={200} className="rounded-md border border-zinc-300 px-3 py-2" />
-        </div>
+        <Field label="Title" htmlFor="title">
+          <Input id="title" name="title" required maxLength={200} />
+        </Field>
+        <Field label="Client / artist" htmlFor="client_name" optional>
+          <Input id="client_name" name="client_name" maxLength={200} />
+        </Field>
       </fieldset>
       <fieldset disabled={busy} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="file" className="text-sm font-medium">
-            Mix
-          </label>
+        <Field label="Mix" htmlFor="file" error={fileError}>
           <div
-            className={`flex flex-col gap-2 rounded-lg border-2 border-dashed p-4 ${
-              fileError ? "border-red-300 bg-red-50" : picked ? "border-zinc-400 bg-zinc-50" : "border-zinc-300"
-            }`}
+            className={cx(
+              "flex flex-col gap-2 rounded-card border-2 border-dashed p-4",
+              fileError ? "border-danger-line bg-danger-surface" : picked ? "border-line-active bg-surface" : "border-line-strong",
+            )}
           >
             <input
               id="file"
@@ -165,18 +158,13 @@ export function NewSongForm() {
                 setPicked(f && check?.ok ? { name: f.name, size: f.size } : null);
                 if (f && check?.ok) setFile(f); // after an error, a newly picked file is what "Try again" uploads
               }}
-              className="text-sm text-zinc-600 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-700"
+              className="text-sm text-muted file:mr-3 file:cursor-pointer file:rounded-control file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-on-primary hover:file:bg-primary-hover"
             />
-            <p id="file-hint" className="text-xs text-zinc-500">
+            <p id="file-hint" className="text-xs text-subtle">
               {picked ? `Ready to upload: ${picked.name} (${formatBytes(picked.size)})` : "WAV or MP3, up to 500 MB"}
             </p>
           </div>
-          {fileError && (
-            <p className="text-sm text-red-700" role="alert">
-              {fileError}
-            </p>
-          )}
-        </div>
+        </Field>
       </fieldset>
 
       {phase.name === "uploading" && (
@@ -185,48 +173,38 @@ export function NewSongForm() {
             aria-label="Upload progress"
             value={phase.loaded}
             max={phase.total}
-            className="h-2 w-full overflow-hidden rounded [&::-webkit-progress-bar]:bg-zinc-200 [&::-webkit-progress-value]:bg-zinc-900"
+            className="h-2 w-full overflow-hidden rounded [&::-webkit-progress-bar]:bg-line [&::-webkit-progress-value]:bg-primary"
           />
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-muted">
             Uploading… {formatBytes(phase.loaded)} of {formatBytes(phase.total)} (
             {Math.floor((phase.loaded / phase.total) * 100)}%)
           </p>
         </div>
       )}
-      {phase.name === "finishing" && <p className="text-sm text-zinc-600">Finishing…</p>}
+      {phase.name === "finishing" && <p className="text-sm text-muted">Finishing…</p>}
 
       {phase.name === "error" && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm text-red-700" role="alert">
-            {phase.message}
-          </p>
+          <ErrorText>{phase.message}</ErrorText>
           {songId && (
             <div className="flex items-center gap-3">
               {phase.retryable && file && (
-                <button
-                  type="button"
-                  onClick={() => upload(songId, file)}
-                  className="w-fit rounded-md bg-zinc-900 px-4 py-2 text-sm text-white"
-                >
+                <Button onClick={() => upload(songId, file)} className="w-fit">
                   Try again
-                </button>
+                </Button>
               )}
-              <button type="button" onClick={() => router.push("/songs")} className="text-sm underline">
+              <Button variant="link" onClick={() => router.push("/songs")}>
                 {phase.retryable ? "Skip for now" : "Back to songs"}
-              </button>
+              </Button>
             </div>
           )}
         </div>
       )}
 
       {songId === null && (
-        <button
-          type="submit"
-          disabled={busy || fileError !== null}
-          className="w-fit rounded-md bg-zinc-900 px-4 py-2 text-white disabled:opacity-50"
-        >
+        <Button type="submit" size="md" disabled={busy || fileError !== null} className="w-fit">
           {phase.name === "saving" ? "Creating…" : "Create song and upload"}
-        </button>
+        </Button>
       )}
     </form>
   );
