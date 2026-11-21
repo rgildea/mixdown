@@ -23,7 +23,9 @@ export function checkWaveform(input: unknown): Waveform | null {
   const clean: number[] = [];
   for (const p of peaks) {
     if (typeof p !== "number" || !(p >= 0 && p <= 1)) return null; // also rejects NaN
-    clean.push(p);
+    // Same rounding as the scanner. Also maps values too small for Postgres `real` (e.g. 1e-50, which
+    // raises "out of range") to 0, so a tampered value can't fail the insert.
+    clean.push(Math.round(p * 1000) / 1000);
   }
   return { durationMs: durationMs as number, peaks: clean };
 }

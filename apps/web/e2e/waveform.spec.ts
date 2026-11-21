@@ -104,6 +104,29 @@ test("a tampered waveform is dropped by the server, and the upload still succeed
   expect(await adminMixWaveform(songId)).toEqual({ duration_ms: null, peaks: null });
 });
 
+test("a peak too small for Postgres `real` is rounded, not a failed upload", async ({ page }) => {
+  await signIn(page, DEV);
+  // 1e-50 passes a 0–1 range check but Postgres rejects it as "out of range for type real" (PR #60 review).
+  await tamperAction(page, isFinishUpload, (a) => ({ ...a, waveform: { durationMs: 10_000, peaks: [1e-50, 0.5] } }));
+  const songId = await upload(page, `Tiny peak ${Date.now()}`, {
+    name: "tiny.wav", mimeType: "audio/wav", buffer: quietThenLoudWav(),
+  });
+  expect(await adminMixWaveform(songId)).toEqual({ duration_ms: 10_000, peaks: [0, 0.5] });
+});
+
+test("a scan that never finishes doesn't hold up the upload", async ({ page }) => {
+  test.setTimeout(60_000);
+  // Some decoders have returned promises that never settle on odd input (PR #60 review).
+  await page.addInitScript(() => {
+    OfflineAudioContext.prototype.decodeAudioData = () => new Promise<AudioBuffer>(() => {});
+  });
+  await signIn(page, DEV);
+  const songId = await upload(page, `Stuck scan ${Date.now()}`, {
+    name: "stuck.mp3", mimeType: "audio/mpeg", buffer: Buffer.alloc(300_000, 1),
+  });
+  expect(await adminMixWaveform(songId)).toEqual({ duration_ms: null, peaks: null });
+});
+
 test("the client's listen page draws the waveform too", async ({ page, browser }) => {
   await signIn(page, DEV);
   await upload(page, `Client wave ${Date.now()}`, { name: "c.wav", mimeType: "audio/wav", buffer: quietThenLoudWav() });

@@ -15,6 +15,9 @@ type Phase =
   | { name: "finishing" }
   | { name: "error"; message: string; retryable: boolean };
 
+/** How long "Finishing…" waits for the waveform scan after the upload itself is done. */
+const SCAN_GRACE_MS = 10_000;
+
 type Failure = { ok: false; error: string; retryable: boolean };
 
 /** Server Actions can throw (network drop, server error) as well as return errors. */
@@ -106,7 +109,9 @@ export function NewSongForm() {
     }
 
     setPhase({ name: "finishing" });
-    const waveform = await scan; // never rejects; usually finished long before the upload
+    // Never rejects, and is usually done long before the upload. If it isn't within SCAN_GRACE_MS (a
+    // slow machine, or a decoder that never settles), finish without a waveform rather than hang.
+    const waveform = await Promise.race([scan, new Promise<null>((r) => setTimeout(() => r(null), SCAN_GRACE_MS))]);
     if (!mounted.current) return;
     const done = await call(() =>
       finishUpload({ songId: id, key: target.key, filename: f.name, size: f.size, waveform: waveform ?? undefined }),

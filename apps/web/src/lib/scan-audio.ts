@@ -4,8 +4,14 @@
 import { MAX_DURATION_MS, PEAK_COUNT, type Waveform } from "./waveform-rules";
 
 const CHUNK_BYTES = 4 * 1024 * 1024;
-/** decodeAudioData holds the whole decoded file in memory; past this, skip MP3s rather than crash the tab. */
-const MAX_DECODE_BYTES = 100 * 1024 * 1024;
+/**
+ * decodeAudioData holds the whole decoded file in memory (float32, every channel). 20 MB is ~8 min at
+ * 320 kbps (~180 MB decoded) or ~22 min at 128 kbps (~230 MB). Longer MP3s get no waveform rather
+ * than risk crashing the tab mid-upload. A typical song at 320 kbps is ~10 MB.
+ */
+const MAX_DECODE_BYTES = 20 * 1024 * 1024;
+/** Frames per slice of the decoded-MP3 peak loop, between yields (~1M samples, a few ms). */
+const DECODED_SLICE_FRAMES = 1 << 19;
 
 export async function scanAudio(file: File): Promise<Waveform | null> {
   try {
@@ -141,13 +147,17 @@ async function scanDecoded(file: File): Promise<Waveform | null> {
   if (frames < 1) return null;
   const buckets = Math.min(PEAK_COUNT, frames);
   const peaks = new Float32Array(buckets);
-  for (let c = 0; c < audio.numberOfChannels; c++) {
-    const data = audio.getChannelData(c);
-    for (let i = 0; i < frames; i++) {
-      const v = Math.abs(data[i]);
-      const b = Math.floor((i * buckets) / frames);
-      if (v > peaks[b]) peaks[b] = v;
+  const channels = Array.from({ length: audio.numberOfChannels }, (_, c) => audio.getChannelData(c));
+  for (let start = 0; start < frames; start += DECODED_SLICE_FRAMES) {
+    const end = Math.min(start + DECODED_SLICE_FRAMES, frames);
+    for (const data of channels) {
+      for (let i = start; i < end; i++) {
+        const v = Math.abs(data[i]);
+        const b = Math.floor((i * buckets) / frames);
+        if (v > peaks[b]) peaks[b] = v;
+      }
     }
+    await new Promise((r) => setTimeout(r, 0)); // same as scanWav: never freeze the tab
   }
   return { durationMs: Math.round(audio.duration * 1000), peaks: finish(peaks) };
 }

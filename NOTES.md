@@ -340,3 +340,10 @@ lined up (#2 closed).
   `AGENTS.md`.
 - Not verified: Safari/Firefox and a real phone (Playwright runs Chromium only); existing uploads have no waveform
   (no backfill, nothing in production yet).
+- **Bot review of #60 (1 medium, 2 low), all fixed:** (medium) MP3s up to 100 MB went through `decodeAudioData`,
+  enough decoded PCM to crash a tab mid-upload, the peak loop didn't yield, and "Finishing…" waited on the scan
+  forever. Now: 20 MB cap, sliced loop, 10 s grace then save without a waveform (new test stubs a decoder that never
+  settles). (low) `1e-50` passed the 0–1 check but Postgres `real` rejects it, failing the upload; now rounded like the
+  scanner (new tamper test). (low) ADR body drifted from the code; updated with a changelog row, plus a note that #46
+  must not rely on `duration_ms` being set. Both new tests fail on the old code. **AI got wrong:** "never blocks the
+  upload" was claimed but only true for WAV; checking a property needs a test of the path that breaks it.
