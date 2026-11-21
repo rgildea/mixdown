@@ -1,9 +1,13 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { signIn } from "./mailpit";
-import { adminAnonymousUserCount } from "./tamper";
+import { adminActiveLinkCount, adminAnonymousUserCount, adminGrantCount } from "./tamper";
 
 // The client side of share links (ADR 0005, issue #44): no account, one click, then listen.
 const DEV = "dev@example.test";
+
+/** Request headers minus the cookie, so a replay carries the replaying browser's session instead. */
+const withoutCookie = (h: Record<string, string>) =>
+  Object.fromEntries(Object.entries(h).filter(([k]) => k.toLowerCase() !== "cookie"));
 
 function wav(seconds: number): Buffer {
   const data = 44100 * 4 * seconds;
@@ -57,8 +61,9 @@ test("a client opens the link, clicks Listen and the mix plays, with no account"
   await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.2);
   expect(await adminAnonymousUserCount()).toBe(anonBefore + 1);
 
-  // Coming back: the link goes straight to the mix, no second anonymous user.
+  // Coming back: one more click, same anonymous user (the session is reused, not recreated).
   await client.goto(sharePath);
+  await client.getByRole("button", { name: "Listen" }).click();
   await expect(client).toHaveURL(/\/listen\//);
   expect(await adminAnonymousUserCount()).toBe(anonBefore + 1);
   await ctx.close();
@@ -81,7 +86,8 @@ test("revoking the link cuts the client off", async ({ page, browser }) => {
   await expect(client.getByRole("heading", { name: "This mix isn't available" })).toBeVisible();
   await expect(client.locator("audio")).toHaveCount(0);
   await client.goto(sharePath);
-  await expect(client.getByRole("heading", { name: "This link is no longer active" })).toBeVisible();
+  await client.getByRole("button", { name: "Listen" }).click();
+  await expect(client.getByText("This link is no longer active. Ask for a new one.")).toBeVisible();
   await ctx.close();
 });
 
@@ -112,7 +118,90 @@ test("an anonymous client can't use the engineer pages", async ({ page, browser 
 test("the engineer opening their own link sees the client view", async ({ page }) => {
   const title = `Own link ${Date.now()}`;
   const { sharePath } = await engineerShares(page, title);
-  await page.goto(sharePath); // already signed in: straight through
+  await page.goto(sharePath);
+  await page.getByRole("button", { name: "Listen" }).click(); // signed in already: no anonymous user needed
   await expect(page).toHaveURL(/\/listen\//);
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
+});
+
+test("loading the link has no side effects, even for someone already signed in", async ({ page, browser }) => {
+  const { songUrl, sharePath } = await engineerShares(page, `No GET writes ${Date.now()}`);
+  const songId = songUrl.split("/").pop()!;
+  const other = await browser.newContext(); // another studio's engineer, signed in
+  const otherPage = await other.newPage();
+  await signIn(otherPage, "dev2@example.test");
+  await otherPage.goto(sharePath);
+  await expect(otherPage.getByRole("button", { name: "Listen" })).toBeVisible();
+  expect(await adminGrantCount(songId)).toBe(0); // nothing redeemed just by loading
+  await other.close();
+});
+
+test("the redeem action never creates users: replayed without a session it is refused", async ({ page, browser }) => {
+  const { sharePath } = await engineerShares(page, `Replay redeem ${Date.now()}`);
+  const { ctx, page: client } = await clientPage(browser);
+
+  // Capture the real redeem Server Action request from a normal client click.
+  let captured: { url: string; headers: Record<string, string>; body: string } | null = null;
+  client.on("request", (r) => {
+    if (r.method() === "POST" && r.headers()["next-action"] && !captured) {
+      captured = { url: r.url(), headers: r.headers(), body: r.postData() ?? "" };
+    }
+  });
+  await client.goto(sharePath);
+  await client.getByRole("button", { name: "Listen" }).click();
+  await expect(client).toHaveURL(/\/listen\//);
+  expect(captured).not.toBeNull();
+
+  // Replay it from a browser with no cookies: no session → refused, and no anonymous user is created.
+  const stranger = await browser.newContext();
+  const anonBefore = await adminAnonymousUserCount();
+  const headers = withoutCookie(captured!.headers);
+  const res = await stranger.request.post(captured!.url, { headers, data: captured!.body });
+  expect(await adminAnonymousUserCount(), "the replayed action must not create an anonymous user").toBe(anonBefore);
+  expect(await res.text()).toContain("listening session");
+  await stranger.close();
+  await ctx.close();
+});
+
+test("engineer Server Actions refuse an anonymous session (with a positive control)", async ({ page, browser }) => {
+  const { songUrl, sharePath } = await engineerShares(page, `Anon action ${Date.now()}`);
+  const songId = songUrl.split("/").pop()!;
+
+  // An anonymous client with a real session (they opened the share link).
+  const { ctx, page: client } = await clientPage(browser);
+  await client.goto(sharePath);
+  await client.getByRole("button", { name: "Listen" }).click();
+  await expect(client).toHaveURL(/\/listen\//);
+
+  // Capture the engineer's real "create share link" Server Action request: revoke, create, revoke.
+  const calls: { url: string; headers: Record<string, string>; body: string }[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && r.headers()["next-action"]) {
+      calls.push({ url: r.url(), headers: r.headers(), body: r.postData() ?? "" });
+    }
+  });
+  const panel = page.getByRole("region", { name: "Share with client" });
+  page.once("dialog", (d) => d.accept());
+  await panel.getByRole("button", { name: "Revoke" }).click();
+  await panel.getByRole("button", { name: "Create share link" }).click();
+  await expect(panel.getByLabel("Share link")).toHaveValue(/\/s\//);
+  const createCall = calls.at(-1)!;
+  expect(createCall.body).toContain(songId);
+  page.once("dialog", (d) => d.accept());
+  await panel.getByRole("button", { name: "Revoke" }).click();
+  await expect(panel.getByRole("button", { name: "Create share link" })).toBeVisible();
+  expect(await adminActiveLinkCount(songId)).toBe(0);
+
+  // Replay it with the ANONYMOUS client's session. Posted to "/" so the proxy's redirect for /songs/**
+  // can't mask what the action itself does.
+  const headers = withoutCookie(createCall.headers);
+  const target = new URL("/", createCall.url).toString();
+  await ctx.request.post(target, { headers, data: createCall.body });
+  expect(await adminActiveLinkCount(songId)).toBe(0); // refused: no link created
+
+  // Positive control: the same replay with the ENGINEER's session does create a link, so the replay
+  // mechanism works and the refusal above is meaningful.
+  await page.request.post(target, { headers, data: createCall.body });
+  expect(await adminActiveLinkCount(songId)).toBe(1);
+  await ctx.close();
 });

@@ -122,3 +122,21 @@ export async function adminAnonymousUserCount() {
   const { users } = (await res.json()) as { users: { is_anonymous?: boolean }[] };
   return users.filter((u) => u.is_anonymous).length;
 }
+
+/** Number of client grants on a song (admin view; test assertions only). */
+export async function adminGrantCount(songId: string) {
+  const { url, key } = localAdmin();
+  const res = await fetch(`${url}/rest/v1/song_access?select=user_id&song_id=eq.${songId}`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  return ((await res.json()) as unknown[]).length;
+}
+
+/** Number of ACTIVE share links on a song (admin view; test assertions only). */
+export async function adminActiveLinkCount(songId: string) {
+  const { url, key } = localAdmin();
+  const res = await fetch(`${url}/rest/v1/share_links?select=id&song_id=eq.${songId}&revoked_at=is.null`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  return ((await res.json()) as unknown[]).length;
+}

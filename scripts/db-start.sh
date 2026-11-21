@@ -8,6 +8,10 @@ cd "$(dirname "$0")/.."
 if ! docker info >/dev/null 2>&1; then
   if [[ "$(uname)" == "Linux" && "$(id -u)" == "0" ]] && command -v dockerd >/dev/null; then
     echo "Starting dockerd…"
+    # After a container restart, a stale pid file can point at a reused PID; dockerd then refuses to start.
+    if [[ -f /var/run/docker.pid ]] && ! ps -p "$(cat /var/run/docker.pid)" -o comm= 2>/dev/null | grep -q dockerd; then
+      rm -f /var/run/docker.pid
+    fi
     nohup dockerd >/tmp/dockerd.log 2>&1 &
     for _ in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
   fi

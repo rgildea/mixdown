@@ -276,10 +276,17 @@ lined up (#2 closed).
   fresh signed audio URL, revoked → 404 "This mix isn't available"), and anonymous sessions are never treated as engineers
   (proxy + `getCurrentUser`); "no studio" is now a 404, not a 500 (#9 item).
 - **Decided (AI, recorded in ADR 0005):** click to listen rather than signing in on load, so link previews
-  (iMessage/Slack/email) can't create anonymous users or burn the per-IP limit. A test asserts that viewing
-  the link creates no user.
+  (iMessage/Slack/email) can't create anonymous users. A test asserts that viewing the link creates no user.
 - **Tests:** 5 new E2E across two browsers (client plays the mix with no account; revoke cuts off; bad
   links; anonymous blocked from engineer pages; engineer opening their own link).
 - **AI got wrong:** two pgTAP assertions from #52 counted revoked links across the WHOLE database as admin,
   so they failed once E2E runs had revoked real links locally. Now scoped to the fixture's song; verified on
   a dirty and a clean database.
+- **Bot review of #57 (first real one under #54) found a medium issue, fixed:** I'd put `signInAnonymously()` in
+  a Server Action, so Supabase saw Vercel's IP and every client shared one 30/hour anonymous limit. Since it signed in
+  before checking the token, anyone could exhaust it with junk tokens and block all clients. Now the browser
+  signs in (per-visitor IP) and the server only redeems, never creating users. Also: everyone clicks Listen
+  (loading the page used to redeem for existing sessions, a write on GET), plus 3 new tests: no grant from loading the
+  link while signed in; a replayed redeem without a session creates no user; a replayed engineer action with an
+  anonymous session creates nothing, **with a positive control** (the same replay as the engineer does create a link).
+- **Also:** `db:start` now removes a stale Docker pid file left by a container restart.

@@ -1,7 +1,4 @@
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { getSessionUser } from "@/lib/auth";
 import { SHARE_TOKEN } from "@/lib/share-token";
 import { OpenButton } from "./open-button";
 
@@ -28,21 +25,8 @@ export default async function SharePage({ params }: PageProps<"/s/[token]">) {
     );
   }
 
-  // Returning visitors (they already have a session, anonymous or not) go straight to the mix.
-  // Redeeming is idempotent; first-time visitors must click, so preview bots create nothing.
-  const user = await getSessionUser();
-  if (user) {
-    const supabase = await createClient();
-    const { data: songId } = await supabase.rpc("redeem_share_link", { link_token: token });
-    if (songId) redirect(`/listen/${songId}`);
-    return (
-      <Shell>
-        <h1 className="text-2xl font-semibold tracking-tight">This link is no longer active</h1>
-        <p className="text-zinc-600">It may have been revoked. Ask whoever sent it for a new one.</p>
-      </Shell>
-    );
-  }
-
+  // No side effects on load, for anyone: link previews and cross-site requests can't sign anyone in
+  // or redeem anything. Visitors click Listen (returning clients can bookmark /listen/... instead).
   return (
     <Shell>
       <h1 className="text-2xl font-semibold tracking-tight">A mix has been shared with you</h1>
