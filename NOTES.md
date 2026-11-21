@@ -318,3 +318,25 @@ lined up (#2 closed).
 - **AI got wrong:** first draft mapped `--radius-control: var(--radius-control)` inside `@theme inline`, a
   self-reference; radii now live in a plain `@theme` block.
 - **After #57 merged:** its `/s` and `/listen` pages moved onto the components too. Not done: dark mode (later issue).
+
+## 2026-11-21: Week 2 S4 (#45), waveform (Claude Code)
+- **Decided (Ryan accepted ADR 0010 as drafted):** the engineer's browser measures peaks (2,000 values) and the exact
+  duration from the local file while it uploads; `finishUpload` stores them on `mix_versions` (`peaks real[]`,
+  `duration_ms int`, both nullable, bounded by CHECKs). Both pages pass them to wavesurfer.js 8.1 over the existing
+  `<audio>` element, so the waveform shows at once and audio still streams by range requests. Rejected: decoding on
+  every view (downloads the whole file, can crash a phone), a server/queue worker (the old post-processor trap),
+  peaks as a JSON file in R2.
+- **Built:** WAV scanner (walks RIFF chunks, PCM 8/16/24/32-bit and float, `WAVE_FORMAT_EXTENSIBLE`, 4 MB slices),
+  MP3 via `decodeAudioData` (≤ 100 MB), shared `checkWaveform` for the Server Action, `MixCard` + `WaveformPlayer`
+  used by `/songs/[id]` and `/listen/[songId]`, duration in the mix meta line. An unscannable or tampered waveform
+  never fails the upload: the mix is stored without one and the plain player shows.
+- **Tests:** pgTAP (20: bounds, null/NaN/2-D peaks, write-once, who can read), mutation-checked by dropping the
+  null-element check (`0 <= all(...)` lets a null through). 6 E2E: stored peaks match a quiet-then-loud 24-bit file
+  with a JUNK chunk; clicking seeks and the file is never fetched; unscannable MP3; tampered values dropped; client page;
+  a **300 MB WAV uploads with the longest main-thread gap ~45 ms**. Mutation-checked: without peaks wavesurfer fetches
+  the file (test fails); one 400 MB chunk freezes the tab ~620 ms (test fails).
+- **Process:** this session first worked on a tool-named `claude/project-thread-*` branch. Ryan wants one
+  `w<week>/<issue>-<slug>` branch per story, pushed at the start; moved to `w2/45-waveform` and wrote the rule into
+  `AGENTS.md`.
+- Not verified: Safari/Firefox and a real phone (Playwright runs Chromium only); existing uploads have no waveform
+  (no backfill, nothing in production yet).

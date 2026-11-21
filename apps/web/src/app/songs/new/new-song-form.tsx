@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ACCEPT_ATTR, checkUpload, formatBytes } from "@/lib/upload-rules";
+import { scanAudio } from "@/lib/scan-audio";
+import type { Waveform } from "@/lib/waveform-rules";
 import { Button, Field, Input, ErrorText, cx } from "@/components/ui";
 import { createSong, createUploadUrl, finishUpload } from "./actions";
 
@@ -55,6 +57,8 @@ export function NewSongForm() {
   const [file, setFile] = useState<File | null>(null);
   const [picked, setPicked] = useState<{ name: string; size: number } | null>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
+  // The waveform scan runs alongside the upload, once per file (a retry reuses it). ADR 0010.
+  const scanRef = useRef<{ file: File; result: Promise<Waveform | null> } | null>(null);
   const mounted = useRef(true);
 
   const busy = phase.name === "saving" || phase.name === "uploading" || phase.name === "finishing";
@@ -79,6 +83,8 @@ export function NewSongForm() {
   const fail = (f: Failure) => mounted.current && setPhase({ name: "error", message: f.error, retryable: f.retryable });
 
   async function upload(id: string, f: File) {
+    if (scanRef.current?.file !== f) scanRef.current = { file: f, result: scanAudio(f) };
+    const scan = scanRef.current.result;
     const target = await call(() => createUploadUrl({ songId: id, filename: f.name, size: f.size }));
     if (!target.ok) return fail(target);
 
@@ -100,7 +106,11 @@ export function NewSongForm() {
     }
 
     setPhase({ name: "finishing" });
-    const done = await call(() => finishUpload({ songId: id, key: target.key, filename: f.name, size: f.size }));
+    const waveform = await scan; // never rejects; usually finished long before the upload
+    if (!mounted.current) return;
+    const done = await call(() =>
+      finishUpload({ songId: id, key: target.key, filename: f.name, size: f.size, waveform: waveform ?? undefined }),
+    );
     if (!done.ok) return fail(done);
     if (mounted.current) router.push(`/songs/${id}`);
   }

@@ -10,6 +10,9 @@ Canonical rules for any AI coding tool (Claude Code, Cursor, Codex…). Read `PR
   AND add a row to its `## Changelog` (date, change, why, PR); see `docs/adr/README.md`.
 - Each session starts from a GitHub issue or spec. Work only on that. If you notice
   something out of scope, suggest a `later` issue; don't build it.
+- Branch per story, named `w<week>/<issue>-<slug>` (e.g. `w2/45-waveform`). Create and push it at the
+  start of the story and commit there, so Ryan can check it out and collaborate. Never work on a
+  tool-generated branch name (e.g. `claude/...`); if a session can't push the story branch, say so.
 - Small steps: one feature → show the diff → run it → commit. Before writing code
   for a new feature, list the files you'll create or change.
 - When a technical choice would take more than ~30 minutes, pick the common

@@ -36,7 +36,7 @@ Cloudflare R2 for audio (presigned URLs), Vercel hosting. npm workspaces monorep
 - Keep it simple: no state libraries, no ORMs, no component libraries in Week 1.
 - UI uses the semantic tokens in `globals.css` and our own components in `src/components/ui/`, never raw
   palette shades or one-off button styles (`docs/design-system.md`).
-- One feature per branch/PR, closing its GitHub issue.
+- One feature per branch/PR, closing its GitHub issue. Branch: `w<week>/<issue>-<slug>` (see `AGENTS.md`).
 
 ## Later list
 Lives in GitHub Issues with the `later` label, not in code and not here.

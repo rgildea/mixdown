@@ -1,8 +1,8 @@
 # 0010. Waveform peaks and duration computed in the browser at upload, stored on the mix version
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-21
-- Decided by: (awaiting Ryan)
+- Decided by: Ryan (accepted as drafted, 2026-11-21)
 
 ## Context
 Week 2 needs a waveform on the song page and on the client's listen page (#45), and Week 2 S5 pins
@@ -72,3 +72,4 @@ Details:
 | Date | Change | Why |
 |---|---|---|
 | 2026-11-21 | Created (Proposed). | #45 asks for an ADR before building the waveform. |
+| 2026-11-21 | Accepted by Ryan as drafted. | — |

@@ -7,14 +7,14 @@ export type Database = {
           Tables: {
             "mix_versions": {
                   Row: {
-                    "created_at": string,"created_by": string,"id": string,"mime_type": string,"object_key": string,"original_filename": string,"size_bytes": number,"song_id": string,"version_number": number
+                    "created_at": string,"created_by": string,"duration_ms": number | null,"id": string,"mime_type": string,"object_key": string,"original_filename": string,"peaks": (number)[] | null,"size_bytes": number,"song_id": string,"version_number": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string,"id"?: string,"mime_type": string,"object_key": string,"original_filename": string,"size_bytes": number,"song_id": string,"version_number"?: number
+                    "created_at"?: string,"created_by"?: string,"duration_ms"?: number | null,"id"?: string,"mime_type": string,"object_key": string,"original_filename": string,"peaks"?: (number)[] | null,"size_bytes": number,"song_id": string,"version_number"?: number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string,"id"?: string,"mime_type"?: string,"object_key"?: string,"original_filename"?: string,"size_bytes"?: number,"song_id"?: string,"version_number"?: number
+                    "created_at"?: string,"created_by"?: string,"duration_ms"?: number | null,"id"?: string,"mime_type"?: string,"object_key"?: string,"original_filename"?: string,"peaks"?: (number)[] | null,"size_bytes"?: number,"song_id"?: string,"version_number"?: number
                   }
                   Relationships: [
                     {

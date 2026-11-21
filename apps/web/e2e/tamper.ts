@@ -152,3 +152,13 @@ export async function adminDeleteNewestAnonymousUser() {
   const del = await fetch(`${url}/auth/v1/admin/users/${newest.id}`, { method: "DELETE", headers: h });
   if (!del.ok) throw new Error(`delete failed: ${del.status}`);
 }
+
+/** The stored duration and peaks of a song's v1 mix (admin view; test assertions only). */
+export async function adminMixWaveform(songId: string) {
+  const { url, key } = localAdmin();
+  const res = await fetch(`${url}/rest/v1/mix_versions?select=duration_ms,peaks&song_id=eq.${songId}`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  const [row] = (await res.json()) as { duration_ms: number | null; peaks: number[] | null }[];
+  return row;
+}
