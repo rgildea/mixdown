@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -18,10 +19,9 @@ export const getCurrentWorkspace = cache(async (): Promise<Workspace> => {
     .eq("user_id", user.id)
     .order("created_at", { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (error || !data?.workspace) {
-    throw new Error(`No workspace for user ${user.id}: ${error?.message ?? "missing"}`);
-  }
+  if (error) throw error;
+  if (!data?.workspace) notFound(); // e.g. a client account without a studio: 404, not a 500
   return data.workspace;
 });

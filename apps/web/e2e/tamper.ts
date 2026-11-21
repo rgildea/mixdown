@@ -112,3 +112,13 @@ export async function adminInvite(email: string) {
   });
   if (!res.ok) throw new Error(`invite failed: ${res.status} ${await res.text()}`);
 }
+
+/** Number of anonymous users (admin view; test assertions only). */
+export async function adminAnonymousUserCount() {
+  const { url, key } = localAdmin();
+  const res = await fetch(`${url}/auth/v1/admin/users?per_page=1000`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  const { users } = (await res.json()) as { users: { is_anonymous?: boolean }[] };
+  return users.filter((u) => u.is_anonymous).length;
+}

@@ -15,8 +15,11 @@ permission system that grows into that, not two.
    The token is 192 bits of randomness, **stored as-is** so the engineer can re-copy the link later, and
    readable only by members of the song's studio (RLS); only `revoked_at` is updatable. One **active**
    link per song (partial unique index); one link covers one song in v1.
-2. The share page `/s/[token]` signs the visitor in with **Supabase anonymous sign-in**
-   (a real `auth.uid()`, no email) if they have no session.
+2. The share page `/s/[token]` has **no side effects on load**. A first-time visitor clicks **Listen**,
+   which signs them in with **Supabase anonymous sign-in** (a real `auth.uid()`, no email), redeems the
+   link and goes to `/listen/[songId]`. Visitors who already have a session are redeemed and redirected
+   straight away. The click step exists so that link-preview bots (iMessage, Slack, email) don't create
+   anonymous users or use up the per-IP anonymous sign-in limit.
 3. One `security definer` function **`redeem_share_link(token)`** validates the token and upserts
    **`song_access (song_id, user_id, role, share_link_id, created_at)`** with `role = 'client'`.
 4. Everything else (reading the song and versions, reading and adding comments) goes through
@@ -61,3 +64,4 @@ permission system that grows into that, not two.
 | 2026-11-20 | Spike result recorded: anonymous sign-ins don't work with global signups off; resolved by moving invite-only into the DB (ADR 0004). Design otherwise unchanged (#42). | The 15-minute check this ADR asked for found the conflict before any share-link code was written. |
 | 2026-11-20 | Implemented (#43): **token stored in plain text** rather than hashed, readable only by studio members; one active link per song; only `revoked_at` updatable; grants count only while their link is active; studio members opening their own link get no client grant. | Ryan's call: engineers need to re-copy links, and these are streaming links, not bank details, so the hash-only/show-once UX wasn't worth it. A database leak would expose working links, which is accepted. |
 | 2026-11-20 | Hardened after the PR #52 review: revoking is final (un-revoke refused); token format enforced (`^[A-Za-z0-9_-]{32,64}$`); grant check also matches link↔song; share URLs from `NEXT_PUBLIC_SITE_URL`; revoke text admits already-open audio lasts up to an hour; tests for grant privacy, cross-studio revoke, and versions cut off on revoke/expiry (#43). | Independent review found un-revoke possible (confirmed live) and several untested claims; no exploitable high/medium issue. |
+| 2026-11-21 | Client page built (#44): a **click to listen** instead of signing in on page load; client view at `/listen/[songId]` (RLS-only, revoked → 404); anonymous users are not engineers (proxy and `getCurrentUser` send them to `/login`; no studio → 404, not 500). | Signing in on load would let link-preview bots create anonymous users and use up the rate limit. Engineer pages must never treat a share-link session as an engineer. |

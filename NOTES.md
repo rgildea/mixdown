@@ -269,3 +269,17 @@ lined up (#2 closed).
   wasn't set for Production, and the code silently fell back to localhost. **AI got wrong:** a silent fallback to a
   plausible-but-wrong value. Now `siteUrl()` falls back to Vercel's runtime `VERCEL_PROJECT_PRODUCTION_URL` and
   ignores localhost values on Vercel; a production build with no URL at all throws instead of guessing.
+
+## 2026-11-21: Week 2 S3 (#44), client share page (Claude Code)
+- **Built:** `/s/[token]` (no side effects on load; **Listen** click → anonymous sign-in → redeem →
+  `/listen/[songId]`; returning visitors go straight through), the client listen page (RLS-only access,
+  fresh signed audio URL, revoked → 404 "This mix isn't available"), and anonymous sessions are never treated as engineers
+  (proxy + `getCurrentUser`); "no studio" is now a 404, not a 500 (#9 item).
+- **Decided (AI, recorded in ADR 0005):** click to listen rather than signing in on load, so link previews
+  (iMessage/Slack/email) can't create anonymous users or burn the per-IP limit. A test asserts that viewing
+  the link creates no user.
+- **Tests:** 5 new E2E across two browsers (client plays the mix with no account; revoke cuts off; bad
+  links; anonymous blocked from engineer pages; engineer opening their own link).
+- **AI got wrong:** two pgTAP assertions from #52 counted revoked links across the WHOLE database as admin,
+  so they failed once E2E runs had revoked real links locally. Now scoped to the fixture's song; verified on
+  a dirty and a clean database.
