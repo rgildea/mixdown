@@ -12,13 +12,14 @@ export function OpenButton({ token }: { token: string }) {
     start(async () => {
       setError(null);
       try {
-        // Sign in anonymously IN THE BROWSER, only if there's no session yet, so the rate limit is
-        // per visitor. The session cookie is then sent with the Server Action below.
+        // Sign in anonymously IN THE BROWSER, only if there's no valid session yet, so the rate limit
+        // is per visitor. The session cookie is then sent with the Server Action below.
+        // getUser() checks the session with Supabase (getSession() only reads the cookie): a stale
+        // session (e.g. its anonymous user was cleaned up) is cleared locally and replaced.
         const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session) {
+        const { data, error: userError } = await supabase.auth.getUser();
+        if (userError || !data.user) {
+          await supabase.auth.signOut({ scope: "local" });
           const { error: signInError } = await supabase.auth.signInAnonymously();
           if (signInError) {
             setError(

@@ -140,3 +140,15 @@ export async function adminActiveLinkCount(songId: string) {
   });
   return ((await res.json()) as unknown[]).length;
 }
+
+/** Deletes the most recently created anonymous user (simulates a cleanup job; test setup only). */
+export async function adminDeleteNewestAnonymousUser() {
+  const { url, key } = localAdmin();
+  const h = { apikey: key, Authorization: `Bearer ${key}` };
+  const res = await fetch(`${url}/auth/v1/admin/users?per_page=1000`, { headers: h });
+  const { users } = (await res.json()) as { users: { id: string; is_anonymous?: boolean; created_at: string }[] };
+  const newest = users.filter((u) => u.is_anonymous).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  if (!newest) throw new Error("no anonymous user to delete");
+  const del = await fetch(`${url}/auth/v1/admin/users/${newest.id}`, { method: "DELETE", headers: h });
+  if (!del.ok) throw new Error(`delete failed: ${del.status}`);
+}

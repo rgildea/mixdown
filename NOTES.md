@@ -290,3 +290,7 @@ lined up (#2 closed).
   link while signed in; a replayed redeem without a session creates no user; a replayed engineer action with an
   anonymous session creates nothing, **with a positive control** (the same replay as the engineer does create a link).
 - **Also:** `db:start` now removes a stale Docker pid file left by a container restart.
+- **Bot re-review:** all four fixed; one new low: the browser trusted `getSession()` (cookie only), so a
+  deleted anonymous user's browser would be stuck on "Try again". Now `getUser()` validates and a stale session
+  is cleared locally and replaced. The new test deletes the user mid-session (mutation-checked: the old code
+  gets stuck).

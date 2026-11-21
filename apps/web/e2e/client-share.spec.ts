@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { signIn } from "./mailpit";
-import { adminActiveLinkCount, adminAnonymousUserCount, adminGrantCount } from "./tamper";
+import { adminActiveLinkCount, adminAnonymousUserCount, adminDeleteNewestAnonymousUser, adminGrantCount } from "./tamper";
 
 // The client side of share links (ADR 0005, issue #44): no account, one click, then listen.
 const DEV = "dev@example.test";
@@ -203,5 +203,19 @@ test("engineer Server Actions refuse an anonymous session (with a positive contr
   // mechanism works and the refusal above is meaningful.
   await page.request.post(target, { headers, data: createCall.body });
   expect(await adminActiveLinkCount(songId)).toBe(1);
+  await ctx.close();
+});
+
+test("a stale session (its anonymous user was deleted) recovers instead of getting stuck", async ({ page, browser }) => {
+  const { sharePath } = await engineerShares(page, `Stale session ${Date.now()}`);
+  const { ctx, page: client } = await clientPage(browser);
+  await client.goto(sharePath);
+  await client.getByRole("button", { name: "Listen" }).click();
+  await expect(client).toHaveURL(/\/listen\//);
+
+  await adminDeleteNewestAnonymousUser(); // e.g. a future cleanup job; the browser still holds the cookie
+  await client.goto(sharePath);
+  await client.getByRole("button", { name: "Listen" }).click();
+  await expect(client).toHaveURL(/\/listen\//); // a fresh anonymous session, not "Try again"
   await ctx.close();
 });
